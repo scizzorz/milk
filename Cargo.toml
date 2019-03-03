@@ -7,6 +7,7 @@ edition = "2018"
 [dependencies]
 clap = "2.32.0"
 env_logger = "0.6.0"
+exitcode = "1.1.2"
 exitfailure = "0.5.1"
 failure = "0.1.5"
 git2 = "0.7"
