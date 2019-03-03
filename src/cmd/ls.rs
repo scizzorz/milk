@@ -9,8 +9,8 @@ use structopt::StructOpt;
 
 #[derive(StructOpt)]
 struct Cli {
-  #[structopt(default_value = ".")]
-  path: std::path::PathBuf,
+  #[structopt(long = "repo", short = "p", default_value = ".")]
+  repo_path: std::path::PathBuf,
   #[structopt(short = "ref", long = "r", default_value = "HEAD")]
   ref_name: String,
 }
@@ -22,7 +22,7 @@ fn main() -> Result<(), ExitFailure> {
   let mut status_opts = StatusOptions::new();
   status_opts.include_untracked(true);
 
-  let repo = Repository::open(&args.path).with_context(|_| "couldn't open repository")?;
+  let repo = Repository::open(&args.repo_path).with_context(|_| "couldn't open repository")?;
 
   // FIXME this isn't a good way to look up references
   let ref_ = repo.find_reference(&args.ref_name).with_context(|_| format!("couldn't find ref `{}`", args.ref_name))?;

@@ -11,8 +11,8 @@ use structopt::StructOpt;
 
 #[derive(StructOpt)]
 struct Cli {
-  #[structopt(default_value = ".")]
-  path: std::path::PathBuf,
+  #[structopt(long = "repo", short = "p", default_value = ".")]
+  repo_path: std::path::PathBuf,
 }
 
 fn git_to_chrono(sig: &Time) -> DateTime<FixedOffset> {
@@ -29,7 +29,7 @@ fn main() -> Result<(), ExitFailure> {
   let mut status_opts = StatusOptions::new();
   status_opts.include_untracked(true);
 
-  let repo = Repository::open(args.path).with_context(|_| "couldn't open repository")?;
+  let repo = Repository::open(args.repo_path).with_context(|_| "couldn't open repository")?;
   let head = repo.head().with_context(|_| "couldn't locate HEAD")?;
   let commit = head
     .peel_to_commit()

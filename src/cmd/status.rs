@@ -8,8 +8,8 @@ use structopt::StructOpt;
 
 #[derive(StructOpt)]
 struct Cli {
-  #[structopt(default_value = ".")]
-  path: std::path::PathBuf,
+  #[structopt(long = "repo", short = "p", default_value = ".")]
+  repo_path: std::path::PathBuf,
 }
 
 fn get_status_string(status: &Status) -> String {
@@ -57,7 +57,7 @@ fn main() -> Result<(), ExitFailure> {
   let mut status_opts = StatusOptions::new();
   status_opts.include_untracked(true);
 
-  let repo = Repository::open(args.path).with_context(|_| "couldn't open repository")?;
+  let repo = Repository::open(args.repo_path).with_context(|_| "couldn't open repository")?;
   let _state = repo.state();
 
   for entry in repo
