@@ -5,6 +5,7 @@ authors = ["John Weachock <jweachock@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+ansi_term = "0.11"
 clap = "2.32.0"
 env_logger = "0.6.0"
 exitcode = "1.1.2"
