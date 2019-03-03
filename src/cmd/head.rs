@@ -5,7 +5,6 @@ use colored::*;
 use exitfailure::ExitFailure;
 use failure::ResultExt;
 use git2::Repository;
-use git2::Status;
 use git2::StatusOptions;
 use git2::Time;
 use structopt::StructOpt;
