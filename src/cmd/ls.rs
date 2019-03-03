@@ -3,12 +3,12 @@ use exitcode;
 use exitfailure::ExitFailure;
 use failure::ResultExt;
 use git2::ObjectType;
+use git2::Oid;
 use git2::Repository;
 use git2::StatusOptions;
 use git2::Tree;
 use std::process::exit;
 use structopt::StructOpt;
-use git2::Oid;
 
 #[derive(StructOpt)]
 struct Cli {
@@ -101,8 +101,14 @@ fn main() -> Result<(), ExitFailure> {
 
     match find_subtree(&tree, &frag_name) {
       Some(next_tree_id) => {
-        println!("{}/ {}", frag_name.cyan(), next_tree_id.to_string().bright_black());
-        tree = repo.find_tree(next_tree_id).with_context(|_| "couldn't find tree")?;
+        println!(
+          "{}/ {}",
+          frag_name.cyan(),
+          next_tree_id.to_string().bright_black()
+        );
+        tree = repo
+          .find_tree(next_tree_id)
+          .with_context(|_| "couldn't find tree")?;
       }
       None => {
         eprintln!("Subtree `{}` did not exist", frag_name);
