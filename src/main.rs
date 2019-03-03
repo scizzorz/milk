@@ -1,6 +1,7 @@
 use clap::crate_version;
 use clap::App;
 use clap::AppSettings;
+use exitcode;
 use exitfailure::ExitFailure;
 use failure::ResultExt;
 use log::info;
@@ -37,7 +38,7 @@ fn main() -> Result<(), ExitFailure> {
 
       if !exit_status.success() {
         eprintln!("{} exited with non-zero exit code", subcommand);
-        exit(exit_status.code().unwrap_or(1));
+        exit(exit_status.code().unwrap_or(exitcode::SOFTWARE));
       }
     }
 

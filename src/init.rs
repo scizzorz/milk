@@ -21,8 +21,7 @@ fn main() -> Result<(), ExitFailure> {
 
   if args.bare {
     info!("Initializing bare git repository...");
-  }
-  else {
+  } else {
     info!("Initializing git repository...");
   }
 
