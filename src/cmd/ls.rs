@@ -46,7 +46,6 @@ fn print_tree(tree: &Tree) {
   }
 }
 
-// fn find_subtree<'repo>(tree: &Tree<'repo>, name: &str) -> Option<&'repo Tree<'repo>> {
 fn find_subtree(tree: &Tree, name: &str) -> Option<Oid> {
   for entry in tree.iter() {
     let raw_name = entry.name().unwrap_or("[???]");
@@ -99,12 +98,17 @@ fn main() -> Result<(), ExitFailure> {
         exit(exitcode::USAGE);
       }
     };
-    let next_tree_id = find_subtree(&tree, &frag_name);
 
-    if let Some(next_tree_id) = next_tree_id {
-      println!("{}/ {}", frag_name.cyan(), next_tree_id.to_string().bright_black());
-      tree = repo.find_tree(next_tree_id).with_context(|_| "couldn't find tree")?;
-    }
+    match find_subtree(&tree, &frag_name) {
+      Some(next_tree_id) => {
+        println!("{}/ {}", frag_name.cyan(), next_tree_id.to_string().bright_black());
+        tree = repo.find_tree(next_tree_id).with_context(|_| "couldn't find tree")?;
+      }
+      None => {
+        eprintln!("Subtree `{}` did not exist", frag_name);
+        exit(exitcode::USAGE);
+      }
+    };
   }
 
   print_tree(&tree);
