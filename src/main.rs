@@ -5,8 +5,7 @@ struct Cli {
   command: String,
 }
 
-
 fn main() {
-    let args = Cli::from_args();
-    println!("milk-{}", args.command);
+  let args = Cli::from_args();
+  println!("milk-{}", args.command);
 }

@@ -1,11 +1,9 @@
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
-struct Cli {
-}
-
+struct Cli {}
 
 fn main() {
-    let args = Cli::from_args();
-    println!("milk-init");
+  let args = Cli::from_args();
+  println!("milk-init");
 }
