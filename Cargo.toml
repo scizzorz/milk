@@ -5,6 +5,7 @@ authors = ["John Weachock <jweachock@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+chrono = "0.4.6"
 clap = "2.32.0"
 colored = "1.7"
 env_logger = "0.6.0"
