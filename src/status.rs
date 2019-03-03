@@ -1,9 +1,4 @@
-use ansi_term::Colour::Blue;
-use ansi_term::Colour::Cyan;
-use ansi_term::Colour::Green;
-use ansi_term::Colour::Red;
-use ansi_term::Colour::Yellow;
-use ansi_term::Style;
+use colored::*;
 use exitfailure::ExitFailure;
 use failure::ResultExt;
 use git2::Repository;
@@ -19,37 +14,37 @@ struct Cli {
 
 fn get_status_string(status: &Status) -> String {
   let index_string = if status.is_index_new() {
-    Green.paint("new")
+    "new".green()
   } else if status.is_index_modified() {
-    Green.paint("mod")
+    "mod".green()
   } else if status.is_index_deleted() {
-    Red.paint("del")
+    "del".red()
   } else if status.is_index_renamed() {
-    Blue.bold().paint("ren")
+    "ren".blue()
   } else if status.is_index_typechange() {
-    Blue.paint("typ")
+    "typ".blue()
   } else {
-    Style::new().paint("   ")
+    "   ".normal()
   };
 
   let working_string = if status.is_wt_new() {
-    Green.bold().paint("new")
+    "new".bright_green()
   } else if status.is_wt_modified() {
-    Green.bold().paint("mod")
+    "mod".bright_green()
   } else if status.is_wt_deleted() {
-    Red.bold().paint("del")
+    "del".bright_red()
   } else if status.is_wt_renamed() {
-    Blue.bold().paint("ren")
+    "ren".bright_blue()
   } else if status.is_wt_typechange() {
-    Blue.bold().paint("typ")
+    "typ".bright_blue()
   } else {
-    Style::new().paint("   ")
+    "   ".normal()
   };
 
   if status.is_ignored() {
-    format!("{}", Cyan.paint(" ignored"))
+    format!("{}", " ignored".cyan())
   } else if status.is_conflicted() {
-    format!("{}", Red.paint("conflict"))
+    format!("{}", "conflict".red())
   } else {
     format!(" {} {}", index_string, working_string)
   }
