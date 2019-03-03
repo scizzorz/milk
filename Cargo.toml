@@ -5,9 +5,11 @@ authors = ["John Weachock <jweachock@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+env_logger = "0.6.0"
 exitfailure = "0.5.1"
 failure = "0.1.5"
 git2 = "0.7"
+log = "0.4.6"
 structopt = "0.2.14"
 
 [[bin]]
