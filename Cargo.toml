@@ -21,3 +21,7 @@ path = "src/main.rs"
 [[bin]]
 name = "milk-init"
 path = "src/init.rs"
+
+[[bin]]
+name = "milk-status"
+path = "src/status.rs"
