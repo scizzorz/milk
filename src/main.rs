@@ -1,5 +1,6 @@
 use exitfailure::ExitFailure;
 use failure::ResultExt;
+use log::info;
 use std::process::exit;
 use std::process::Command;
 use std::process::Stdio;
@@ -12,6 +13,9 @@ struct Cli {
 
 fn main() -> Result<(), ExitFailure> {
   let args = Cli::from_args();
+  env_logger::init();
+
+  info!("Running subcommand: `milk-{}`", args.command);
 
   let exit_status = Command::new(format!("milk-{}", args.command))
     .stdin(Stdio::inherit())
@@ -20,7 +24,7 @@ fn main() -> Result<(), ExitFailure> {
     //.args(&subcommand_args[..])
     .spawn()
     .and_then(|mut handle| handle.wait())
-    .with_context(|_| format!("couldn't execute command: `{}`", args.command))?;
+    .with_context(|_| format!("couldn't execute command: `milk-{}`", args.command))?;
 
   if !exit_status.success() {
     println!("{} exited with non-zero exit code", args.command);
