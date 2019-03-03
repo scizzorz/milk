@@ -4,14 +4,27 @@ use log::info;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
-struct Cli {}
+struct Cli {
+  #[structopt(short = "q", long = "quiet")]
+  quiet: bool,
+  #[structopt(long = "bare")]
+  bare: bool,
+}
 
 fn main() -> Result<(), ExitFailure> {
   let args = Cli::from_args();
   env_logger::init();
 
-  println!("milk-init");
-  info!("Initializing git repository...");
+  if !args.quiet {
+    println!("milk-init");
+  }
+
+  if args.bare {
+    info!("Initializing bare git repository...");
+  }
+  else {
+    info!("Initializing git repository...");
+  }
 
   Ok(())
 }
