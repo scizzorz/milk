@@ -27,3 +27,7 @@ path = "src/cmd/init.rs"
 [[bin]]
 name = "milk-status"
 path = "src/cmd/status.rs"
+
+[[bin]]
+name = "milk-head"
+path = "src/cmd/head.rs"
