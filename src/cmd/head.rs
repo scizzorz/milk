@@ -1,3 +1,4 @@
+use milk::get_short_id;
 use chrono::offset::FixedOffset;
 use chrono::offset::TimeZone;
 use chrono::DateTime;
@@ -51,7 +52,7 @@ fn main() -> Result<(), ExitFailure> {
   println!(
     "{} {}",
     head_name.cyan(),
-    commit.id().to_string().bright_black()
+    get_short_id(&repo, commit.id()).bright_black()
   );
   println!(
     "{} {} {}",

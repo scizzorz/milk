@@ -1,3 +1,4 @@
+use milk::get_short_id;
 use colored::*;
 use exitcode;
 use exitfailure::ExitFailure;
@@ -20,26 +21,26 @@ struct Cli {
   tree_path: std::path::PathBuf,
 }
 
-fn print_tree(tree: &Tree) {
+fn print_tree(repo: &Repository, tree: &Tree) {
   for entry in tree.iter() {
     let raw_name = entry.name().unwrap_or("[???]");
     let name = match entry.kind() {
       Some(ObjectType::Tree) => format!(
         "{}/ {}",
         raw_name.blue(),
-        entry.id().to_string().bright_black()
+        get_short_id(repo, entry.id()).bright_black()
       ),
       Some(ObjectType::Commit) => format!(
         "@{} {}",
         raw_name.bright_red(),
-        entry.id().to_string().bright_black()
+        get_short_id(repo, entry.id()).bright_black()
       ),
       Some(ObjectType::Tag) => format!(
         "#{} {}",
         raw_name.bright_cyan(),
-        entry.id().to_string().bright_black()
+        get_short_id(repo, entry.id()).bright_black()
       ),
-      _ => format!("{} {}", raw_name, entry.id().to_string().bright_black()),
+      _ => format!("{} {}", raw_name, get_short_id(repo, entry.id()).bright_black()),
     };
 
     println!("{}", name);
@@ -80,7 +81,7 @@ fn main() -> Result<(), ExitFailure> {
   println!(
     "{} {}",
     head_name.cyan(),
-    commit.id().to_string().bright_black()
+    get_short_id(&repo, commit.id()).bright_black()
   );
 
   if args.tree_path.is_absolute() {
@@ -104,7 +105,7 @@ fn main() -> Result<(), ExitFailure> {
         println!(
           "{}/ {}",
           frag_name.cyan(),
-          next_tree_id.to_string().bright_black()
+          get_short_id(&repo, next_tree_id).bright_black()
         );
         tree = repo
           .find_tree(next_tree_id)
@@ -117,7 +118,7 @@ fn main() -> Result<(), ExitFailure> {
     };
   }
 
-  print_tree(&tree);
+  print_tree(&repo, &tree);
 
   Ok(())
 }
