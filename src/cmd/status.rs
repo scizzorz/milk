@@ -14,7 +14,7 @@ struct Cli {
 
 fn get_status_string(status: &Status) -> String {
   let index_string = if status.is_index_new() {
-    "new".green()
+    "new".cyan()
   } else if status.is_index_modified() {
     "mod".green()
   } else if status.is_index_deleted() {
@@ -28,7 +28,7 @@ fn get_status_string(status: &Status) -> String {
   };
 
   let working_string = if status.is_wt_new() {
-    "new".bright_green()
+    "new".bright_cyan()
   } else if status.is_wt_modified() {
     "mod".bright_green()
   } else if status.is_wt_deleted() {
@@ -42,7 +42,7 @@ fn get_status_string(status: &Status) -> String {
   };
 
   if status.is_ignored() {
-    format!("{}", " ignored".cyan())
+    format!("{}", " ignored".white())
   } else if status.is_conflicted() {
     format!("{}", "conflict".red())
   } else {
