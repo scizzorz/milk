@@ -35,3 +35,7 @@ path = "src/cmd/head.rs"
 [[bin]]
 name = "milk-ls"
 path = "src/cmd/ls.rs"
+
+[[bin]]
+name = "milk-tag"
+path = "src/cmd/tag.rs"
