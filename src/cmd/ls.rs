@@ -1,4 +1,3 @@
-use milk::get_short_id;
 use colored::*;
 use exitcode;
 use exitfailure::ExitFailure;
@@ -8,6 +7,7 @@ use git2::Oid;
 use git2::Repository;
 use git2::StatusOptions;
 use git2::Tree;
+use milk::get_short_id;
 use std::process::exit;
 use structopt::StructOpt;
 
@@ -40,7 +40,11 @@ fn print_tree(repo: &Repository, tree: &Tree) {
         raw_name.bright_cyan(),
         get_short_id(repo, entry.id()).bright_black()
       ),
-      _ => format!("{} {}", raw_name, get_short_id(repo, entry.id()).bright_black()),
+      _ => format!(
+        "{} {}",
+        raw_name,
+        get_short_id(repo, entry.id()).bright_black()
+      ),
     };
 
     println!("{}", name);

@@ -1,9 +1,9 @@
-use milk::get_short_id;
 use colored::*;
 use exitfailure::ExitFailure;
 use failure::ResultExt;
 use git2::Repository;
 use git2::StatusOptions;
+use milk::get_short_id;
 use milk::git_to_chrono;
 use structopt::StructOpt;
 

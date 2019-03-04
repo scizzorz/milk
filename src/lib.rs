@@ -1,9 +1,9 @@
-use git2::Repository;
-use git2::Oid;
 use chrono::offset::FixedOffset;
-use git2::Time;
 use chrono::offset::TimeZone;
 use chrono::DateTime;
+use git2::Oid;
+use git2::Repository;
+use git2::Time;
 
 pub fn get_short_id(repo: &Repository, oid: Oid) -> String {
   // wtf
