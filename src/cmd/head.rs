@@ -30,7 +30,7 @@ fn main() -> Result<(), ExitFailure> {
   let mut status_opts = StatusOptions::new();
   status_opts.include_untracked(true);
 
-  let repo = Repository::open(args.repo_path).with_context(|_| "couldn't open repository")?;
+  let repo = Repository::discover(args.repo_path).with_context(|_| "couldn't open repository")?;
   let head = repo.head().with_context(|_| "couldn't locate HEAD")?;
   let commit = head
     .peel_to_commit()

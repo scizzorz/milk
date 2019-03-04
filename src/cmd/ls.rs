@@ -64,7 +64,7 @@ fn main() -> Result<(), ExitFailure> {
   let mut status_opts = StatusOptions::new();
   status_opts.include_untracked(true);
 
-  let repo = Repository::open(&args.repo_path).with_context(|_| "couldn't open repository")?;
+  let repo = Repository::discover(&args.repo_path).with_context(|_| "couldn't open repository")?;
 
   // FIXME this isn't a good way to look up references
   let ref_ = repo

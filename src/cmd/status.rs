@@ -62,7 +62,7 @@ fn main() -> Result<(), ExitFailure> {
   status_opts.include_untracked(!args.hide_untracked);
   status_opts.include_ignored(args.show_ignored);
 
-  let repo = Repository::open(args.repo_path).with_context(|_| "couldn't open repository")?;
+  let repo = Repository::discover(args.repo_path).with_context(|_| "couldn't open repository")?;
   let _state = repo.state();
 
   for entry in repo
