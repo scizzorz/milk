@@ -5,7 +5,6 @@ use failure::ResultExt;
 use git2::ObjectType;
 use git2::Oid;
 use git2::Repository;
-use git2::StatusOptions;
 use git2::Tree;
 use milk::get_short_id;
 use std::process::exit;
@@ -64,9 +63,6 @@ fn find_subtree(tree: &Tree, name: &str) -> Option<Oid> {
 fn main() -> Result<(), ExitFailure> {
   let args = Cli::from_args();
   env_logger::init();
-
-  let mut status_opts = StatusOptions::new();
-  status_opts.include_untracked(true);
 
   let repo = Repository::discover(&args.repo_path).with_context(|_| "couldn't open repository")?;
 

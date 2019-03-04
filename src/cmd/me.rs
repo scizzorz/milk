@@ -2,7 +2,6 @@ use colored::*;
 use exitfailure::ExitFailure;
 use failure::ResultExt;
 use git2::Repository;
-use git2::StatusOptions;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
@@ -14,9 +13,6 @@ struct Cli {
 fn main() -> Result<(), ExitFailure> {
   let args = Cli::from_args();
   env_logger::init();
-
-  let mut status_opts = StatusOptions::new();
-  status_opts.include_untracked(true);
 
   let repo = Repository::discover(args.repo_path).with_context(|_| "couldn't open repository")?;
 
