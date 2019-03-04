@@ -10,6 +10,10 @@ use structopt::StructOpt;
 struct Cli {
   #[structopt(long = "repo", short = "p", default_value = ".")]
   repo_path: std::path::PathBuf,
+  #[structopt(long = "hide-untracked", short = "u")]
+  hide_untracked: bool,
+  #[structopt(long = "show-ignored", short = "i")]
+  show_ignored: bool,
 }
 
 fn get_status_string(status: &Status) -> String {
@@ -55,7 +59,8 @@ fn main() -> Result<(), ExitFailure> {
   env_logger::init();
 
   let mut status_opts = StatusOptions::new();
-  status_opts.include_untracked(true);
+  status_opts.include_untracked(!args.hide_untracked);
+  status_opts.include_ignored(args.show_ignored);
 
   let repo = Repository::open(args.repo_path).with_context(|_| "couldn't open repository")?;
   let _state = repo.state();
