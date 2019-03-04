@@ -1,26 +1,16 @@
 use milk::get_short_id;
-use chrono::offset::FixedOffset;
-use chrono::offset::TimeZone;
-use chrono::DateTime;
 use colored::*;
 use exitfailure::ExitFailure;
 use failure::ResultExt;
 use git2::Repository;
 use git2::StatusOptions;
-use git2::Time;
+use milk::git_to_chrono;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
 struct Cli {
   #[structopt(long = "repo", short = "p", default_value = ".")]
   repo_path: std::path::PathBuf,
-}
-
-fn git_to_chrono(sig: &Time) -> DateTime<FixedOffset> {
-  let timestamp = sig.seconds();
-  let offset_sec = sig.offset_minutes() * 60;
-  let fixed_offset = FixedOffset::east(offset_sec);
-  fixed_offset.timestamp(timestamp, 0)
 }
 
 fn main() -> Result<(), ExitFailure> {
