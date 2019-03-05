@@ -6,9 +6,7 @@ A modernized porcelain for git.
 
 Apparently terminals are going through some sort of modern renaissance where
 old, antiquated tools are being replaced with hip, fresh tools. I'm hopping on
-the bandwagon. The original idea credit goes to
-[eevee/tcup](https://github.com/eevee/tcup), but that project seems to be have
-been long abandoned. Many moons ago it was even written in Rust 0.6.
+the bandwagon.
 
 See:
 
@@ -22,6 +20,10 @@ See:
 Anyway, I've always found git's standard porcelain to be... confusing. I'm sure
 many newer users may also feel that way, so I'd like to see if I can do
 something about it. Maybe I can't. Whatever.
+
+The original idea credit goes to [eevee/tcup](https://github.com/eevee/tcup),
+but that project seems to be have been long abandoned. Many moons ago it was
+even written in Rust 0.6.
 
 ### Why is it called that
 
