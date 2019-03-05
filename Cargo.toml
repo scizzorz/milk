@@ -22,44 +22,44 @@ path = "src/main.rs"
 
 [[bin]]
 name = "milk-init"
-path = "src/cmd/init.rs"
+path = "src/init.rs"
 
 [[bin]]
 name = "milk-status"
-path = "src/cmd/status.rs"
+path = "src/status.rs"
 
 [[bin]]
 name = "milk-head"
-path = "src/cmd/head.rs"
+path = "src/head.rs"
 
 [[bin]]
 name = "milk-ls"
-path = "src/cmd/ls.rs"
+path = "src/ls.rs"
 
 [[bin]]
 name = "milk-tag"
-path = "src/cmd/tag.rs"
+path = "src/tag.rs"
 
 [[bin]]
 name = "milk-me"
-path = "src/cmd/me.rs"
+path = "src/me.rs"
 
 [[bin]]
 name = "milk-where"
-path = "src/cmd/where.rs"
+path = "src/where.rs"
 
 [[bin]]
 name = "milk-branch"
-path = "src/cmd/branch/mod.rs"
+path = "src/branch/main.rs"
 
 [[bin]]
 name = "milk-branch-ls"
-path = "src/cmd/branch/ls.rs"
+path = "src/branch/ls.rs"
 
 [[bin]]
 name = "milk-branch-rename"
-path = "src/cmd/branch/rename.rs"
+path = "src/branch/rename.rs"
 
 [[bin]]
 name = "milk-branch-rm"
-path = "src/cmd/branch/rm.rs"
+path = "src/branch/rm.rs"
