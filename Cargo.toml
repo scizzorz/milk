@@ -43,3 +43,7 @@ path = "src/cmd/tag.rs"
 [[bin]]
 name = "milk-me"
 path = "src/cmd/me.rs"
+
+[[bin]]
+name = "milk-where"
+path = "src/cmd/where.rs"
