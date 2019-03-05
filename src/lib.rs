@@ -1,9 +1,56 @@
+use chrono::DateTime;
 use chrono::offset::FixedOffset;
 use chrono::offset::TimeZone;
-use chrono::DateTime;
+use clap::App;
+use clap::AppSettings;
+use clap::crate_version;
+use exitfailure::ExitFailure;
+use failure::ResultExt;
 use git2::Oid;
 use git2::Repository;
 use git2::Time;
+use std::process::Command;
+use std::process::Stdio;
+use std::process::exit;
+
+pub fn run_supercommand(prefix: &str) -> Result<(), ExitFailure> {
+  let args = App::new(prefix)
+    .version(crate_version!())
+    .setting(AppSettings::AllowExternalSubcommands)
+    .setting(AppSettings::ColoredHelp)
+    .get_matches();
+
+
+  match args.subcommand() {
+    (subcommand, Some(scmd)) => {
+      let command = format!("{}-{}", prefix, subcommand);
+
+      let subcommand_args: Vec<&str> = match scmd.values_of("") {
+        Some(values) => values.collect(),
+        None => Vec::new(),
+      };
+
+      let exit_status = Command::new(&command)
+        .stdin(Stdio::inherit())
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .args(&subcommand_args[..])
+        .spawn()
+        .and_then(|mut handle| handle.wait())
+        .with_context(|_| format!("couldn't execute command: `{}`", command))?;
+
+      if !exit_status.success() {
+        // FIXME this should probably return an Err(...)?
+        eprintln!("{} exited with non-zero exit code", command);
+        exit(exit_status.code().unwrap_or(exitcode::SOFTWARE));
+      }
+    }
+
+    _ => {}
+  }
+
+  Ok(())
+}
 
 pub fn get_short_id(repo: &Repository, oid: Oid) -> String {
   // wtf
