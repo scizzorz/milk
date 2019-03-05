@@ -50,16 +50,16 @@ path = "src/cmd/where.rs"
 
 [[bin]]
 name = "milk-branch"
-path = "src/cmd/branch.rs"
+path = "src/cmd/branch/mod.rs"
 
 [[bin]]
 name = "milk-branch-ls"
-path = "src/cmd/branch-ls.rs"
+path = "src/cmd/branch/ls.rs"
 
 [[bin]]
 name = "milk-branch-rename"
-path = "src/cmd/branch-rename.rs"
+path = "src/cmd/branch/rename.rs"
 
 [[bin]]
 name = "milk-branch-rm"
-path = "src/cmd/branch-rm.rs"
+path = "src/cmd/branch/rm.rs"
