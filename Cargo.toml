@@ -47,3 +47,7 @@ path = "src/cmd/me.rs"
 [[bin]]
 name = "milk-where"
 path = "src/cmd/where.rs"
+
+[[bin]]
+name = "milk-branch-ls"
+path = "src/cmd/branch-ls.rs"
