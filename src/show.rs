@@ -1,10 +1,10 @@
 use colored::*;
 use exitfailure::ExitFailure;
 use failure::ResultExt;
+use git2::ObjectType;
 use git2::Repository;
 use milk::find_from_name;
 use milk::get_short_id;
-use milk::git_to_chrono;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
@@ -20,6 +20,30 @@ fn main() -> Result<(), ExitFailure> {
 
   let repo = Repository::discover(args.repo_path).with_context(|_| "couldn't open repository")?;
 
-  let object = find_from_name(&repo, &args.name);
+  match find_from_name(&repo, &args.name) {
+    Some(object) => {
+      match object.kind() {
+        Some(ObjectType::Blob) => {
+          println!("{} {}", "blob".cyan(), get_short_id(&repo, object.id()).bright_black());
+        }
+        Some(ObjectType::Tree) => {
+          println!("{} {}", "tree".cyan(), get_short_id(&repo, object.id()).bright_black());
+        }
+        Some(ObjectType::Commit) => {
+          println!("{} {}", "commit".cyan(), get_short_id(&repo, object.id()).bright_black());
+        }
+        Some(ObjectType::Tag) => {
+          println!("{} {}", "tag".cyan(), get_short_id(&repo, object.id()).bright_black());
+        }
+        _ => {
+          println!("{} {}", "unknown".cyan(), get_short_id(&repo, object.id()).bright_black());
+        }
+      }
+    }
+    None => {
+      println!("Couldn't find object.");
+    }
+  }
+
   Ok(())
 }
