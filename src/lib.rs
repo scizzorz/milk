@@ -6,8 +6,11 @@ use clap::AppSettings;
 use clap::crate_version;
 use exitfailure::ExitFailure;
 use failure::ResultExt;
+use git2::BranchType;
 use git2::Object;
+use git2::ObjectType;
 use git2::Oid;
+use git2::ReferenceType;
 use git2::Repository;
 use git2::Time;
 use std::process::Command;
@@ -74,15 +77,43 @@ pub fn git_to_chrono(sig: &Time) -> DateTime<FixedOffset> {
   fixed_offset.timestamp(timestamp, 0)
 }
 
-pub fn find_from_name<'repo>(repo: &'repo Repository, name: &str) -> Option<Object<'repo>> {
-  /* wip
-  if name.get(0u) == "#" {
+// TODO this and find_from_name should both return Result<...> and shouldn't ignore errors
+pub fn find_from_refname<'repo>(repo: &'repo Repository, name: &str) -> Option<Object<'repo>> {
+  let oid = repo.refname_to_id(name);
+  if let Ok(oid) = oid {
+    let object = repo.find_object(oid, Some(ObjectType::Any));
+    if let Ok(object) = object {
+      return Some(object);
+    }
   }
-  else if name[0] == "@" {
+  None
+}
+
+pub fn find_from_name<'repo>(repo: &'repo Repository, name: &str) -> Option<Object<'repo>> {
+  let mut iter = name.chars();
+  let head = iter.next();
+  let tail: String = iter.collect();
+
+  if let None = head {
+    find_from_refname(repo, "HEAD")
+  }
+  else if let Some('#') = head {
+    find_from_refname(repo, &format!("refs/tags/{}", tail))
+  }
+  else if let Some('@') = head {
+    find_from_refname(repo, &format!("refs/heads/{}", tail))
   }
   else {
+    // FIXME don't unwrap
+    let odb = repo.odb().unwrap();
+    let short_oid = Oid::from_str(name).unwrap();
+    let oid = odb.exists_prefix(short_oid, name.len());
+    if let Ok(oid) = oid {
+      let object = repo.find_object(oid, Some(ObjectType::Any));
+      if let Ok(object) = object {
+        return Some(object);
+      }
+    }
+    None
   }
-  */
-
-  None
 }
