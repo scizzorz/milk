@@ -1,3 +1,4 @@
+use git2::Error;
 use chrono::DateTime;
 use chrono::offset::FixedOffset;
 use chrono::offset::TimeZone;
@@ -77,19 +78,12 @@ pub fn git_to_chrono(sig: &Time) -> DateTime<FixedOffset> {
   fixed_offset.timestamp(timestamp, 0)
 }
 
-// TODO this and find_from_name should both return Result<...> and shouldn't ignore errors
-pub fn find_from_refname<'repo>(repo: &'repo Repository, name: &str) -> Option<Object<'repo>> {
-  let oid = repo.refname_to_id(name);
-  if let Ok(oid) = oid {
-    let object = repo.find_object(oid, Some(ObjectType::Any));
-    if let Ok(object) = object {
-      return Some(object);
-    }
-  }
-  None
+pub fn find_from_refname<'repo>(repo: &'repo Repository, name: &str) -> Result<Object<'repo>, Error> {
+  let oid = repo.refname_to_id(name)?;
+  repo.find_object(oid, Some(ObjectType::Any))
 }
 
-pub fn find_from_name<'repo>(repo: &'repo Repository, name: &str) -> Option<Object<'repo>> {
+pub fn find_from_name<'repo>(repo: &'repo Repository, name: &str) -> Result<Object<'repo>, Error> {
   let mut iter = name.chars();
   let head = iter.next();
   let tail: String = iter.collect();
@@ -104,16 +98,9 @@ pub fn find_from_name<'repo>(repo: &'repo Repository, name: &str) -> Option<Obje
     find_from_refname(repo, &format!("refs/heads/{}", tail))
   }
   else {
-    // FIXME don't unwrap
-    let odb = repo.odb().unwrap();
-    let short_oid = Oid::from_str(name).unwrap();
-    let oid = odb.exists_prefix(short_oid, name.len());
-    if let Ok(oid) = oid {
-      let object = repo.find_object(oid, Some(ObjectType::Any));
-      if let Ok(object) = object {
-        return Some(object);
-      }
-    }
-    None
+    let odb = repo.odb()?;
+    let short_oid = Oid::from_str(name)?;
+    let oid = odb.exists_prefix(short_oid, name.len())?;
+    repo.find_object(oid, Some(ObjectType::Any))
   }
 }

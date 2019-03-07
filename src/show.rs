@@ -20,28 +20,23 @@ fn main() -> Result<(), ExitFailure> {
 
   let repo = Repository::discover(args.repo_path).with_context(|_| "couldn't open repository")?;
 
-  match find_from_name(&repo, &args.name) {
-    Some(object) => {
-      match object.kind() {
-        Some(ObjectType::Blob) => {
-          println!("{} {}", "blob".cyan(), get_short_id(&repo, object.id()).bright_black());
-        }
-        Some(ObjectType::Tree) => {
-          println!("{} {}", "tree".cyan(), get_short_id(&repo, object.id()).bright_black());
-        }
-        Some(ObjectType::Commit) => {
-          println!("{} {}", "commit".cyan(), get_short_id(&repo, object.id()).bright_black());
-        }
-        Some(ObjectType::Tag) => {
-          println!("{} {}", "tag".cyan(), get_short_id(&repo, object.id()).bright_black());
-        }
-        _ => {
-          println!("{} {}", "unknown".cyan(), get_short_id(&repo, object.id()).bright_black());
-        }
-      }
+  let object = find_from_name(&repo, &args.name).with_context(|_| "couldn't look up object")?;
+
+  match object.kind() {
+    Some(ObjectType::Blob) => {
+      println!("{} {}", "blob".cyan(), get_short_id(&repo, object.id()).bright_black());
     }
-    None => {
-      println!("Couldn't find object.");
+    Some(ObjectType::Tree) => {
+      println!("{} {}", "tree".cyan(), get_short_id(&repo, object.id()).bright_black());
+    }
+    Some(ObjectType::Commit) => {
+      println!("{} {}", "commit".cyan(), get_short_id(&repo, object.id()).bright_black());
+    }
+    Some(ObjectType::Tag) => {
+      println!("{} {}", "tag".cyan(), get_short_id(&repo, object.id()).bright_black());
+    }
+    _ => {
+      println!("{} {}", "unknown".cyan(), get_short_id(&repo, object.id()).bright_black());
     }
   }
 
