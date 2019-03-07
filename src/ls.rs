@@ -4,6 +4,7 @@ use exitfailure::ExitFailure;
 use failure::ResultExt;
 use git2::ObjectType;
 use git2::Oid;
+use milk::highlight_named_oid;
 use git2::Repository;
 use git2::Tree;
 use milk::get_short_id;
@@ -79,9 +80,8 @@ fn main() -> Result<(), ExitFailure> {
   let head_name = ref_.shorthand().unwrap_or("[???]");
 
   println!(
-    "{} {}",
-    head_name.cyan(),
-    get_short_id(&repo, commit.id()).bright_black()
+    "{}",
+    highlight_named_oid(&repo, head_name, commit.id())
   );
 
   if args.tree_path.is_absolute() {

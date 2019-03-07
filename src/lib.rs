@@ -1,3 +1,4 @@
+use colored::*;
 use git2::Error;
 use chrono::DateTime;
 use chrono::offset::FixedOffset;
@@ -7,16 +8,18 @@ use clap::AppSettings;
 use clap::crate_version;
 use exitfailure::ExitFailure;
 use failure::ResultExt;
-use git2::BranchType;
 use git2::Object;
 use git2::ObjectType;
 use git2::Oid;
-use git2::ReferenceType;
 use git2::Repository;
 use git2::Time;
 use std::process::Command;
 use std::process::Stdio;
 use std::process::exit;
+
+pub fn highlight_named_oid(repo: &Repository, name: &str, oid: Oid) -> String {
+  format!("{} {}", name.cyan(), get_short_id(repo, oid).bright_black())
+}
 
 pub fn run_supercommand(prefix: &str) -> Result<(), ExitFailure> {
   let args = App::new(prefix)

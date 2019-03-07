@@ -1,3 +1,4 @@
+use milk::highlight_named_oid;
 use colored::*;
 use exitfailure::ExitFailure;
 use failure::ResultExt;
@@ -36,9 +37,8 @@ fn main() -> Result<(), ExitFailure> {
   let committer_time = git_to_chrono(&committer.when());
 
   println!(
-    "{} {}",
-    head_name.cyan(),
-    get_short_id(&repo, commit.id()).bright_black()
+    "{}",
+    highlight_named_oid(&repo, head_name, commit.id())
   );
   println!(
     "{} {} {}",

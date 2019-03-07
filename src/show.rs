@@ -1,3 +1,4 @@
+use milk::highlight_named_oid;
 use colored::*;
 use exitfailure::ExitFailure;
 use failure::ResultExt;
@@ -24,19 +25,19 @@ fn main() -> Result<(), ExitFailure> {
 
   match object.kind() {
     Some(ObjectType::Blob) => {
-      println!("{} {}", "blob".cyan(), get_short_id(&repo, object.id()).bright_black());
+      println!("{}", highlight_named_oid(&repo, "blob", object.id()));
     }
     Some(ObjectType::Tree) => {
-      println!("{} {}", "tree".cyan(), get_short_id(&repo, object.id()).bright_black());
+      println!("{}", highlight_named_oid(&repo, "tree", object.id()));
     }
     Some(ObjectType::Commit) => {
-      println!("{} {}", "commit".cyan(), get_short_id(&repo, object.id()).bright_black());
+      println!("{}", highlight_named_oid(&repo, "commit", object.id()));
     }
     Some(ObjectType::Tag) => {
-      println!("{} {}", "tag".cyan(), get_short_id(&repo, object.id()).bright_black());
+      println!("{}", highlight_named_oid(&repo, "tag", object.id()));
     }
     _ => {
-      println!("{} {}", "unknown".cyan(), get_short_id(&repo, object.id()).bright_black());
+      println!("{}", highlight_named_oid(&repo, "unknown", object.id()));
     }
   }
 
