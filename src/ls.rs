@@ -4,10 +4,10 @@ use exitfailure::ExitFailure;
 use failure::ResultExt;
 use git2::ObjectType;
 use git2::Oid;
-use milk::highlight_named_oid;
 use git2::Repository;
 use git2::Tree;
 use milk::get_short_id;
+use milk::highlight_named_oid;
 use std::process::exit;
 use structopt::StructOpt;
 
@@ -79,10 +79,7 @@ fn main() -> Result<(), ExitFailure> {
   // tf do I do if these aren't UTF-8? Quit?
   let head_name = ref_.shorthand().unwrap_or("[???]");
 
-  println!(
-    "{}",
-    highlight_named_oid(&repo, head_name, commit.id())
-  );
+  println!("{}", highlight_named_oid(&repo, head_name, commit.id()));
 
   if args.tree_path.is_absolute() {
     eprintln!("Tree path must be relative");

@@ -29,9 +29,13 @@ fn main() -> Result<(), ExitFailure> {
     BranchType::Local
   };
 
-  let mut branch = repo.find_branch(&args.from_name, typ).with_context(|_| "couldn't find branch")?;
+  let mut branch = repo
+    .find_branch(&args.from_name, typ)
+    .with_context(|_| "couldn't find branch")?;
 
-  branch.rename(&args.to_name, args.force).with_context(|_| "couldn't rename branch")?;
+  branch
+    .rename(&args.to_name, args.force)
+    .with_context(|_| "couldn't rename branch")?;
 
   Ok(())
 }

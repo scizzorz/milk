@@ -1,4 +1,3 @@
-use milk::highlight_named_oid;
 use colored::*;
 use exitfailure::ExitFailure;
 use failure::ResultExt;
@@ -6,6 +5,7 @@ use git2::ObjectType;
 use git2::Repository;
 use milk::find_from_name;
 use milk::get_short_id;
+use milk::highlight_named_oid;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]

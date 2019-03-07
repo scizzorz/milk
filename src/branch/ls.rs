@@ -19,16 +19,17 @@ fn main() -> Result<(), ExitFailure> {
 
   let repo = Repository::discover(args.repo_path).with_context(|_| "couldn't open repository")?;
 
-  let branches = repo.branches(None).with_context(|_| "couldn't iterate branches")?;
+  let branches = repo
+    .branches(None)
+    .with_context(|_| "couldn't iterate branches")?;
 
   for branch in branches {
     let (branch, typ) = branch.with_context(|_| "couldn't identify branch")?;
-    let name = branch.name().with_context(|_| "couldn't identify branch name")?.unwrap_or("[branch name is invalid utf8]");
-    let head_prefix = if branch.is_head() {
-      "*"
-    } else {
-      " "
-    };
+    let name = branch
+      .name()
+      .with_context(|_| "couldn't identify branch name")?
+      .unwrap_or("[branch name is invalid utf8]");
+    let head_prefix = if branch.is_head() { "*" } else { " " };
     match (typ, args.include_remote) {
       (BranchType::Remote, false) => (),
       _ => println!("{} {}", head_prefix, name),
@@ -37,4 +38,3 @@ fn main() -> Result<(), ExitFailure> {
 
   Ok(())
 }
-

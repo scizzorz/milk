@@ -1,21 +1,21 @@
-use colored::*;
-use git2::Error;
-use chrono::DateTime;
 use chrono::offset::FixedOffset;
 use chrono::offset::TimeZone;
+use chrono::DateTime;
+use clap::crate_version;
 use clap::App;
 use clap::AppSettings;
-use clap::crate_version;
+use colored::*;
 use exitfailure::ExitFailure;
 use failure::ResultExt;
+use git2::Error;
 use git2::Object;
 use git2::ObjectType;
 use git2::Oid;
 use git2::Repository;
 use git2::Time;
+use std::process::exit;
 use std::process::Command;
 use std::process::Stdio;
-use std::process::exit;
 
 pub fn highlight_named_oid(repo: &Repository, name: &str, oid: Oid) -> String {
   format!("{} {}", name.cyan(), get_short_id(repo, oid).bright_black())
@@ -27,7 +27,6 @@ pub fn run_supercommand(prefix: &str) -> Result<(), ExitFailure> {
     .setting(AppSettings::AllowExternalSubcommands)
     .setting(AppSettings::ColoredHelp)
     .get_matches();
-
 
   match args.subcommand() {
     (subcommand, Some(scmd)) => {
@@ -81,7 +80,10 @@ pub fn git_to_chrono(sig: &Time) -> DateTime<FixedOffset> {
   fixed_offset.timestamp(timestamp, 0)
 }
 
-pub fn find_from_refname<'repo>(repo: &'repo Repository, name: &str) -> Result<Object<'repo>, Error> {
+pub fn find_from_refname<'repo>(
+  repo: &'repo Repository,
+  name: &str,
+) -> Result<Object<'repo>, Error> {
   let oid = repo.refname_to_id(name)?;
   repo.find_object(oid, Some(ObjectType::Any))
 }
@@ -93,14 +95,11 @@ pub fn find_from_name<'repo>(repo: &'repo Repository, name: &str) -> Result<Obje
 
   if let None = head {
     find_from_refname(repo, "HEAD")
-  }
-  else if let Some('#') = head {
+  } else if let Some('#') = head {
     find_from_refname(repo, &format!("refs/tags/{}", tail))
-  }
-  else if let Some('@') = head {
+  } else if let Some('@') = head {
     find_from_refname(repo, &format!("refs/heads/{}", tail))
-  }
-  else {
+  } else {
     let odb = repo.odb()?;
     let short_oid = Oid::from_str(name)?;
     let oid = odb.exists_prefix(short_oid, name.len())?;
