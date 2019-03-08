@@ -23,7 +23,7 @@ fn main() -> Result<(), ExitFailure> {
 
   for branch in branches {
     let (branch, typ) = branch.with_context(|_| "couldn't identify branch")?;
-    let name = branch.name().with_context(|_| "couldn't identify branch name")?;
+    let name = branch.name().with_context(|_| "couldn't identify branch name")?.unwrap_or("[branch name is invalid utf8]");
     let head_prefix = if branch.is_head() {
       "*"
     } else {
@@ -31,7 +31,7 @@ fn main() -> Result<(), ExitFailure> {
     };
     match (typ, args.include_remote) {
       (BranchType::Remote, false) => (),
-      _ => println!("{} {:?}", head_prefix, name),
+      _ => println!("{} {}", head_prefix, name),
     }
   }
 
