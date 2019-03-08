@@ -4,6 +4,7 @@ use failure::ResultExt;
 use git2::Repository;
 use milk::get_short_id;
 use milk::git_to_chrono;
+use milk::highlight_named_oid;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
@@ -35,11 +36,7 @@ fn main() -> Result<(), ExitFailure> {
   let committer_email = committer.email().unwrap_or("[???]");
   let committer_time = git_to_chrono(&committer.when());
 
-  println!(
-    "{} {}",
-    head_name.cyan(),
-    get_short_id(&repo, commit.id()).bright_black()
-  );
+  println!("{}", highlight_named_oid(&repo, head_name, commit.id()));
   println!(
     "{} {} {}",
     author_name.cyan(),

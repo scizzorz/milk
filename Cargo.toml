@@ -49,6 +49,10 @@ name = "milk-where"
 path = "src/where.rs"
 
 [[bin]]
+name = "milk-show"
+path = "src/show.rs"
+
+[[bin]]
 name = "milk-branch"
 path = "src/branch/main.rs"
 
