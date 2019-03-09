@@ -28,7 +28,9 @@ fn main() -> Result<(), ExitFailure> {
     BranchType::Local
   };
 
-  let mut branch = repo.find_branch(&args.name, typ).with_context(|_| "couldn't find branch")?;
+  let mut branch = repo
+    .find_branch(&args.name, typ)
+    .with_context(|_| "couldn't find branch")?;
 
   branch.delete().with_context(|_| "couldn't delete branch")?;
 
