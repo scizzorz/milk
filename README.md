@@ -32,6 +32,22 @@ funny to me. Whatever.
 
 ## Design
 
+As it turns out, eevee has already done a fair amount of inspirational
+[planning](https://github.com/eevee/tcup/wiki/Planning). Alas, this is not
+`tcup`! This is `milk`. My plan is slightly different, but the general idea
+remains the same. Several pieces are taken from eevee's, but a few are just
+things that I wish were easier to get out of git.
+
+* I appreciate eevee's `--batch` and `--json` ideas, but `milk` is initially
+  intended to just improve the human experience of interacting with git
+  repositories, not the machine experience.
+* Not sure I agree with being able to do everything that git can do; there's a
+  lot of dark magic hidden away in git's plumbing that is so arcane that it
+  almost never comes up. I just want to support the majority of common
+  operations.
+
+## Gripes with Git
+
 I don't have a really solid vision aside from "easier to use", but here are
 some areas I've noted in git's existing porcelain:
 
@@ -74,3 +90,4 @@ some areas I've noted in git's existing porcelain:
   entity is expected to be, for example `beef` may refer to commit, `@beef` may
   refer to a branch, and `#beef` may refer to a tag. Dunno yet.
 * Probably other stuff too. Dunno.
+* eevee also lists many more [gripes](https://github.com/eevee/tcup/wiki/Git-gripes)
