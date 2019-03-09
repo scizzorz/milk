@@ -38,12 +38,12 @@ fn main() -> Result<(), ExitFailure> {
 
   let repo = Repository::discover(&args.repo_path).with_context(|_| "couldn't open repository")?;
 
-  let object = find_from_name(&repo, &args.ref_name).with_context(|_| "couldn't find ref")?;
+  let object = find_from_name(&repo, &args.ref_name).with_context(|_| "couldn't find refname")?;
 
   let commit = match object.into_commit() {
     Ok(commit) => commit,
     Err(_) => {
-      return Err(failure::err_msg("root cause failure")).context("fuk")?;
+      return Err(failure::err_msg("refname didn't point to commit")).context("...?")?;
     }
   };
 
