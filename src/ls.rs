@@ -8,6 +8,7 @@ use git2::Repository;
 use git2::Tree;
 use milk::get_short_id;
 use milk::highlight_named_oid;
+use milk::print_tree;
 use std::process::exit;
 use structopt::StructOpt;
 
@@ -19,36 +20,6 @@ struct Cli {
   ref_name: String,
   #[structopt(default_value = "")]
   tree_path: std::path::PathBuf,
-}
-
-fn print_tree(repo: &Repository, tree: &Tree) {
-  for entry in tree.iter() {
-    let raw_name = entry.name().unwrap_or("[???]");
-    let name = match entry.kind() {
-      Some(ObjectType::Tree) => format!(
-        "{}/ {}",
-        raw_name.blue(),
-        get_short_id(repo, entry.id()).bright_black()
-      ),
-      Some(ObjectType::Commit) => format!(
-        "@{} {}",
-        raw_name.bright_red(),
-        get_short_id(repo, entry.id()).bright_black()
-      ),
-      Some(ObjectType::Tag) => format!(
-        "#{} {}",
-        raw_name.bright_cyan(),
-        get_short_id(repo, entry.id()).bright_black()
-      ),
-      _ => format!(
-        "{} {}",
-        raw_name,
-        get_short_id(repo, entry.id()).bright_black()
-      ),
-    };
-
-    println!("{}", name);
-  }
 }
 
 fn find_subtree(tree: &Tree, name: &str) -> Option<Oid> {
