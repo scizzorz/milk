@@ -1,15 +1,15 @@
 use exitfailure::ExitFailure;
 use failure::ResultExt;
+use git2::ObjectType;
 use git2::Repository;
+use git2::ResetType;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
 struct Cli {
   #[structopt(long = "repo", short = "p", default_value = ".")]
   repo_path: std::path::PathBuf,
-  /// Unstage all files
-  #[structopt(long = "all", short = "a")]
-  all: bool,
+
   /// The paths to unstage
   #[structopt(raw())]
   paths: Vec<String>,
@@ -23,19 +23,17 @@ fn main() -> Result<(), ExitFailure> {
 
   let head = repo.head().with_context(|_| "couldn't locate HEAD")?;
   let commit = head
-    .peel(git2::ObjectType::Any)
+    .peel(ObjectType::Any)
     .with_context(|_| "couldn't peel to commit HEAD")?;
 
-  if args.all {
-    repo
-      .reset(&commit, git2::ResetType::Mixed, None)
-      .with_context(|_| "could not reset to HEAD")?;
-  } else if args.paths.len() > 0 {
+  if args.paths.len() > 0 {
     repo
       .reset_default(Some(&commit), args.paths)
       .with_context(|_| "could not reset paths")?;
   } else {
-    println!("Doing nothing\nPass -a to unstage all files")
+    repo
+      .reset(&commit, ResetType::Mixed, None)
+      .with_context(|_| "could not reset to HEAD")?;
   }
 
   Ok(())
