@@ -46,6 +46,55 @@ things that I wish were easier to get out of git.
   almost never comes up. I just want to support the majority of common
   operations.
 
+### Commands
+
+If there's a checkbox next to it, it means it has at least minimal
+functionality. It does not mean it's completely finished.
+
+#### Inspection
+
+* [x] `ls` - I like being able to browse the clean git tree like I would browse the
+  dirty working tree
+* [x] `show` - Like `git cat-file -p <id>` but better.
+* [x] `me` - Funny, but also helpful when you may have multiple identities for
+  various repos (eg, personal / work emails)
+* [x] `head` - Just display the current `HEAD`. This is probably obsolete because of
+  `show` defaulting to `HEAD`.
+* [x] `where` - Show the base directory for the working repo
+* [x] `status` - Obvious
+* [ ] `diff` - Obvious
+* [ ] `log` - Obvious
+
+#### File operations
+
+* [ ] `track [paths]` - Start tracking things? Does this make sense? I've always
+  found it weird that `git add` will move something from untracked to staged or
+  from modified to staged. Feels like there's a missing step but I don't know
+  if it actually makes any sense to break it up like this.
+* [ ] `ignore [paths]` - Add things to `.gitignore`
+* [ ] `stage [paths]` - Stage files.
+* [x] `unstage [paths]` - Unstage files. Like `git reset --mixed`, but you can't
+  move your HEAD at the same time. That's weird.
+* [ ] `clean [paths]` - Clean all local modifications. Like `git reset --hard`. I
+  also think it would be nice to add all dirty objects to the ODB and print out
+  their IDs, just in case you really oopsied yourself and want to get them
+  back.
+
+#### Repo operations
+
+* [ ] `switch` - Switch HEAD to something else
+* [ ] `update` - Try to pull new changes from a remote, including
+  fastforwarding local branches and stuff
+* [ ] `commit` - Obvious
+
+#### Branch operations
+
+* [ ] `branch new` - Create a branch
+* [x] `branch rm` - Remove a branch
+* [x] `branch ls` - List all branches
+* [x] `branch rename` - Rename a branch
+* [ ] `branch mv` - Move a branch from its current location to a new one
+
 ## Gripes with Git
 
 I don't have a really solid vision aside from "easier to use", but here are
