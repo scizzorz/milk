@@ -2,7 +2,6 @@ use colored::*;
 use exitfailure::ExitFailure;
 use failure::ResultExt;
 use git2::Repository;
-use milk::get_short_id;
 use milk::git_to_chrono;
 use milk::highlight_named_oid;
 use structopt::StructOpt;
