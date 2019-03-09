@@ -192,7 +192,13 @@ pub fn find_from_name<'repo>(repo: &'repo Repository, name: &str) -> Result<Obje
   } else if let Some('#') = head {
     find_from_refname(repo, &format!("refs/tags/{}", tail))
   } else if let Some('@') = head {
-    find_from_refname(repo, &format!("refs/heads/{}", tail))
+    if tail.len() == 0 {
+      find_from_refname(repo, "HEAD")
+    } else {
+      find_from_refname(repo, &format!("refs/heads/{}", tail))
+    }
+  } else if let Some('/') = head {
+    find_from_refname(repo, &tail)
   } else {
     let odb = repo.odb()?;
     let short_oid = Oid::from_str(name)?;
