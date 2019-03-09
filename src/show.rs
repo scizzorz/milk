@@ -6,6 +6,10 @@ use git2::Repository;
 use milk::find_from_name;
 use milk::get_short_id;
 use milk::highlight_named_oid;
+use milk::print_blob;
+use milk::print_commit;
+use milk::print_tag;
+use milk::print_tree;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
@@ -26,15 +30,23 @@ fn main() -> Result<(), ExitFailure> {
   match object.kind() {
     Some(ObjectType::Blob) => {
       println!("{}", highlight_named_oid(&repo, "blob", object.id()));
+      let blob = object.into_blob().unwrap();
+      print_blob(&repo, &blob);
     }
     Some(ObjectType::Tree) => {
       println!("{}", highlight_named_oid(&repo, "tree", object.id()));
+      let tree = object.into_tree().unwrap();
+      print_tree(&repo, &tree);
     }
     Some(ObjectType::Commit) => {
       println!("{}", highlight_named_oid(&repo, "commit", object.id()));
+      let commit = object.into_commit().unwrap();
+      print_commit(&repo, &commit);
     }
     Some(ObjectType::Tag) => {
       println!("{}", highlight_named_oid(&repo, "tag", object.id()));
+      let tag = object.into_tag().unwrap();
+      print_tag(&repo, &tag);
     }
     _ => {
       println!("{}", highlight_named_oid(&repo, "unknown", object.id()));

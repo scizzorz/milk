@@ -4,6 +4,7 @@ use failure::ResultExt;
 use git2::Repository;
 use milk::git_to_chrono;
 use milk::highlight_named_oid;
+use milk::print_commit;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
@@ -24,35 +25,9 @@ fn main() -> Result<(), ExitFailure> {
 
   // tf do I do if these aren't UTF-8? Quit?
   let head_name = head.shorthand().unwrap_or("[???]");
-
-  let author = commit.author();
-  let author_name = author.name().unwrap_or("[???]");
-  let author_email = author.email().unwrap_or("[???]");
-  let author_time = git_to_chrono(&author.when());
-
-  let committer = commit.committer();
-  let committer_name = committer.name().unwrap_or("[???]");
-  let committer_email = committer.email().unwrap_or("[???]");
-  let committer_time = git_to_chrono(&committer.when());
-
   println!("{}", highlight_named_oid(&repo, head_name, commit.id()));
-  println!(
-    "{} {} {}",
-    author_name.cyan(),
-    author_email.bright_black(),
-    author_time.to_string().bright_blue()
-  );
 
-  if author_name != committer_name || author_email != committer_email {
-    println!(
-      "committed by {} {} {}",
-      committer_name.cyan(),
-      committer_email.bright_black(),
-      committer_time.to_string().bright_blue()
-    );
-  }
-
-  println!("{}", commit.message().unwrap_or(""));
+  print_commit(&repo, &commit);
 
   Ok(())
 }
