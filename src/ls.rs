@@ -2,10 +2,10 @@ use colored::*;
 use exitcode;
 use exitfailure::ExitFailure;
 use failure::ResultExt;
-use git2::ObjectType;
 use git2::Oid;
 use git2::Repository;
 use git2::Tree;
+use milk::find_from_name;
 use milk::get_short_id;
 use milk::highlight_named_oid;
 use milk::print_tree;
@@ -16,7 +16,7 @@ use structopt::StructOpt;
 struct Cli {
   #[structopt(long = "repo", short = "p", default_value = ".")]
   repo_path: std::path::PathBuf,
-  #[structopt(short = "ref", long = "r", default_value = "HEAD")]
+  #[structopt(short = "ref", long = "r", default_value = "/HEAD")]
   ref_name: String,
   #[structopt(default_value = "")]
   tree_path: std::path::PathBuf,
@@ -38,19 +38,19 @@ fn main() -> Result<(), ExitFailure> {
 
   let repo = Repository::discover(&args.repo_path).with_context(|_| "couldn't open repository")?;
 
-  // FIXME this isn't a good way to look up references
-  let ref_ = repo
-    .find_reference(&args.ref_name)
-    .with_context(|_| format!("couldn't find ref `{}`", args.ref_name))?;
+  let object = find_from_name(&repo, &args.ref_name).with_context(|_| "couldn't find ref")?;
 
-  let commit = ref_
-    .peel_to_commit()
-    .with_context(|_| "couldn't peel to commit")?;
+  let commit = match object.into_commit() {
+    Ok(commit) => commit,
+    Err(_) => {
+      return Err(failure::err_msg("root cause failure")).context("fuk")?;
+    }
+  };
 
-  // tf do I do if these aren't UTF-8? Quit?
-  let head_name = ref_.shorthand().unwrap_or("[???]");
-
-  println!("{}", highlight_named_oid(&repo, head_name, commit.id()));
+  println!(
+    "{}",
+    highlight_named_oid(&repo, &args.ref_name, commit.id())
+  );
 
   if args.tree_path.is_absolute() {
     eprintln!("Tree path must be relative");

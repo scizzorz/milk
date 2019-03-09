@@ -16,6 +16,8 @@ use structopt::StructOpt;
 struct Cli {
   #[structopt(long = "repo", short = "p", default_value = ".")]
   repo_path: std::path::PathBuf,
+
+  #[structopt(default_value = "/HEAD")]
   name: String,
 }
 
