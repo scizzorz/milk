@@ -57,6 +57,10 @@ name = "milk-clean"
 path = "src/clean.rs"
 
 [[bin]]
+name = "milk-restore"
+path = "src/restore.rs"
+
+[[bin]]
 name = "milk-show"
 path = "src/show.rs"
 

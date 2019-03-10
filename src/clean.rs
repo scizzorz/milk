@@ -1,12 +1,10 @@
 use exitfailure::ExitFailure;
 use failure::ResultExt;
 use git2::build::CheckoutBuilder;
-use git2::Error;
 use git2::ObjectType;
 use git2::Odb;
 use git2::Oid;
 use git2::Repository;
-use git2::Status;
 use git2::StatusOptions;
 use milk::highlight_named_oid;
 use std::fs::File;
@@ -18,7 +16,7 @@ struct Cli {
   #[structopt(long = "repo", short = "p", default_value = ".")]
   repo_path: std::path::PathBuf,
 
-  /// The paths to unstage
+  /// The paths to clean
   #[structopt(raw())]
   paths: Vec<String>,
 }
