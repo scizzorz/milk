@@ -75,10 +75,12 @@ functionality. It does not mean it's completely finished.
 * [ ] `stage [paths]` - Stage files.
 * [x] `unstage [paths]` - Unstage files. Like `git reset --mixed`, but you can't
   move your HEAD at the same time. That's weird.
-* [ ] `clean [paths]` - Clean all local modifications. Like `git reset --hard`. I
-  also think it would be nice to add all dirty objects to the ODB and print out
-  their IDs, just in case you really oopsied yourself and want to get them
-  back.
+* [x] `clean [paths]` - Clean all local modifications. Like `git reset --hard`.
+  This adds all dirty files to the ODB and prints out the OIDs , just in case
+  you really oof yourself and need to get them back. See `restore` below to
+  restore oopsied files.
+* [x] `restore <blob> <path>` - Place the contents of `<blob>` from the ODB
+  into a file at `<path>`.
 
 #### Repo operations
 
