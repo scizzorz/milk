@@ -63,14 +63,13 @@ fn main() -> Result<(), ExitFailure> {
   status_opts.include_ignored(args.show_ignored);
 
   let repo = Repository::discover(args.repo_path).with_context(|_| "couldn't open repository")?;
-  let _state = repo.state();
 
-  for entry in repo
+  let statuses = repo
     .statuses(Some(&mut status_opts))
-    .with_context(|_| "couldn't open status")?
-    .iter()
-  {
-    let path = entry.path().unwrap();
+    .with_context(|_| "couldn't open status")?;
+
+  for entry in statuses.iter() {
+    let path = entry.path().unwrap_or("[invalid utf-8]");
     let status = entry.status();
     let status_string = get_status_string(&status);
 
