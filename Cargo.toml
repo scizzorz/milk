@@ -37,6 +37,10 @@ name = "milk-unstage"
 path = "src/unstage.rs"
 
 [[bin]]
+name = "milk-ignore"
+path = "src/ignore.rs"
+
+[[bin]]
 name = "milk-ls"
 path = "src/ls.rs"
 

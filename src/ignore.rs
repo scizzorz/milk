@@ -1,0 +1,105 @@
+use exitfailure::ExitFailure;
+use failure::ResultExt;
+use git2::Repository;
+use std::fs::OpenOptions;
+use std::io;
+use std::io::prelude::*;
+use std::path::Path;
+use structopt::StructOpt;
+
+#[derive(StructOpt)]
+/// Ignore files or patterns
+struct Cli {
+  #[structopt(long = "repo", short = "p", default_value = ".")]
+  repo_path: std::path::PathBuf,
+
+  /// Interpret paths as glob patterns and add them to .gitignore unmodified
+  #[structopt(long = "pattern", short = "-P")]
+  is_pattern: bool,
+
+  /// The file or pattern to ignore
+  #[structopt()]
+  pattern: String,
+}
+
+fn handle_file(
+  repo: &Repository,
+  filepath: String,
+  workdir: &Path,
+) -> Result<Option<String>, ExitFailure> {
+  let path = Path::new(&filepath);
+
+  if !path.exists() {
+    print!("File '{}' does not exist, still ignore? [Y/n] ", filepath);
+    io::stdout().flush().context("Could not flush stdout")?;
+    let mut input = String::new();
+    io::stdin()
+      .read_line(&mut input)
+      .context("Could not read stdin")?;
+    match input.trim_right() {
+      "y" | "Y" | "" => (),
+      _ => return Ok(None),
+    }
+  }
+
+  // Try to transform path into its canonical path
+  // from the workdir
+  let path = match path.canonicalize() {
+    Ok(abs_path) => match abs_path.strip_prefix(workdir) {
+      Ok(rel_path) => rel_path.to_path_buf(),
+      _ => path.to_path_buf(),
+    },
+    _ => path.to_path_buf(),
+  };
+
+  match repo
+    .head()
+    .and_then(|head| head.peel_to_commit().and_then(|commit| commit.tree()))
+  {
+    Ok(tree) => {
+      if let Ok(_) = tree.get_path(&path) {
+        println!("Warning: file {} is currently tracked by git", filepath);
+      };
+    }
+    Err(_) => println!("Warning: could not access HEAD"),
+  };
+
+  let final_filepath = path.to_str().ok_or(failure::err_msg("Path is not UTF-8"))?;
+  Ok(Some(String::from(final_filepath)))
+}
+
+fn main() -> Result<(), ExitFailure> {
+  let args = Cli::from_args();
+  env_logger::init();
+
+  let repo = Repository::discover(args.repo_path).context("Couldn't open repository")?;
+
+  let workdir = match repo.workdir() {
+    Some(path) => match path.to_str() {
+      Some(path_str) => Ok(Path::new(path_str)),
+      None => Err(failure::err_msg("Path is not UTF-8")),
+    },
+    None => Err(failure::err_msg("Repository is bare.")),
+  }?;
+
+  let to_ignore = if args.is_pattern {
+    Ok(Some(args.pattern))
+  } else {
+    handle_file(&repo, args.pattern, &workdir)
+  }?;
+
+  if let Some(to_ignore) = to_ignore {
+    let gitignore_path = workdir.join(".gitignore");
+
+    let mut gitignore = OpenOptions::new()
+      .create(!gitignore_path.exists())
+      .append(true)
+      .open(workdir.join(".gitignore"))
+      .context("Couldn't open .gitignore file")?;
+
+    println!("Adding {} to .gitignore", to_ignore);
+    writeln!(gitignore, "{}", to_ignore).context("Couldn't write to .gitignore file")?;
+  };
+
+  Ok(())
+}
