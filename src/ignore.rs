@@ -18,7 +18,6 @@ struct Cli {
   is_pattern: bool,
 
   /// The file or pattern to ignore
-  #[structopt()]
   pattern: String,
 }
 
@@ -32,10 +31,12 @@ fn handle_file(
   if !path.exists() {
     print!("File '{}' does not exist, still ignore? [Y/n] ", filepath);
     io::stdout().flush().context("Could not flush stdout")?;
+
     let mut input = String::new();
     io::stdin()
       .read_line(&mut input)
       .context("Could not read stdin")?;
+
     match input.trim_right() {
       "y" | "Y" | "" => (),
       _ => return Ok(None),
@@ -52,16 +53,14 @@ fn handle_file(
     _ => path.to_path_buf(),
   };
 
-  match repo
-    .head()
-    .and_then(|head| head.peel_to_commit().and_then(|commit| commit.tree()))
-  {
-    Ok(tree) => {
-      if let Ok(_) = tree.get_path(&path) {
-        println!("Warning: file {} is currently tracked by git", filepath);
-      };
-    }
-    Err(_) => println!("Warning: could not access HEAD"),
+  let head = repo.head().with_context(|_| "couldn't locate HEAD")?;
+  let commit = head
+    .peel_to_commit()
+    .with_context(|_| "couldn't peel to commit")?;
+  let tree = commit.tree().with_context(|_| "couldn't locate tree")?;
+
+  if let Ok(_) = tree.get_path(&path) {
+    println!("Warning: file {} is currently tracked by git", filepath);
   };
 
   let final_filepath = path.to_str().ok_or(failure::err_msg("Path is not UTF-8"))?;
@@ -74,19 +73,20 @@ fn main() -> Result<(), ExitFailure> {
 
   let repo = Repository::discover(args.repo_path).context("Couldn't open repository")?;
 
-  let workdir = match repo.workdir() {
-    Some(path) => match path.to_str() {
-      Some(path_str) => Ok(Path::new(path_str)),
-      None => Err(failure::err_msg("Path is not UTF-8")),
-    },
-    None => Err(failure::err_msg("Repository is bare.")),
-  }?;
+  let workdir_bytes = repo
+    .workdir()
+    .ok_or(failure::err_msg("repository is bare"))?;
+  let workdir = Path::new(
+    workdir_bytes
+      .to_str()
+      .ok_or(failure::err_msg("path is not utf-8"))?,
+  );
 
   let to_ignore = if args.is_pattern {
-    Ok(Some(args.pattern))
+    Some(args.pattern)
   } else {
-    handle_file(&repo, args.pattern, &workdir)
-  }?;
+    handle_file(&repo, args.pattern, &workdir)?
+  };
 
   if let Some(to_ignore) = to_ignore {
     let gitignore_path = workdir.join(".gitignore");
