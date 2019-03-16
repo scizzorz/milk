@@ -13,8 +13,9 @@ matrix:
 
 
 before_script:
-  - rustup component add clippy
+  - rustup component add clippy rustfmt
 
 script:
   - cargo build --verbose
+  - 'cargo fmt && [ $(git status -s | wc -l) -eq 0 ]'
   - cargo clippy -- -D warnings
