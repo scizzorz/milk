@@ -37,7 +37,7 @@ fn handle_file(
       .read_line(&mut input)
       .context("Could not read stdin")?;
 
-    match input.trim_right() {
+    match input.trim_end() {
       "y" | "Y" | "" => (),
       _ => return Ok(None),
     }
@@ -59,11 +59,13 @@ fn handle_file(
     .with_context(|_| "couldn't peel to commit")?;
   let tree = commit.tree().with_context(|_| "couldn't locate tree")?;
 
-  if let Ok(_) = tree.get_path(&path) {
+  if tree.get_path(&path).is_ok() {
     println!("Warning: file {} is currently tracked by git", filepath);
   };
 
-  let final_filepath = path.to_str().ok_or(failure::err_msg("Path is not UTF-8"))?;
+  let final_filepath = path
+    .to_str()
+    .ok_or_else(|| failure::err_msg("Path is not UTF-8"))?;
   Ok(Some(String::from(final_filepath)))
 }
 
@@ -75,11 +77,11 @@ fn main() -> Result<(), ExitFailure> {
 
   let workdir_bytes = repo
     .workdir()
-    .ok_or(failure::err_msg("repository is bare"))?;
+    .ok_or_else(|| failure::err_msg("repository is bare"))?;
   let workdir = Path::new(
     workdir_bytes
       .to_str()
-      .ok_or(failure::err_msg("path is not utf-8"))?,
+      .ok_or_else(|| failure::err_msg("path is not utf-8"))?,
   );
 
   let to_ignore = if args.is_pattern {

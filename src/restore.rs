@@ -1,16 +1,7 @@
 use exitfailure::ExitFailure;
 use failure::ResultExt;
-use git2::build::CheckoutBuilder;
-use git2::Error;
-use git2::ObjectType;
-use git2::Odb;
-use git2::Oid;
 use git2::Repository;
-use git2::Status;
-use git2::StatusOptions;
 use milk::find_from_name;
-use milk::highlight_named_oid;
-use std::fs::File;
 use std::fs::OpenOptions;
 use std::io::Write;
 use structopt::StructOpt;

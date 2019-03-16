@@ -85,10 +85,15 @@ pub fn print_tree(repo: &Repository, tree: &Tree) {
   }
 }
 
-pub fn print_blob(repo: &Repository, blob: &Blob) {
+pub fn print_blob(_repo: &Repository, blob: &Blob) {
+  // _repo is unused here, but I'm keeping it to maintain the API that the
+  // rest of the print_* functions have
   let mut stdout = io::stdout();
+
   // what happens on failure?
-  stdout.write(blob.content());
+  match stdout.write(blob.content()) {
+    _ => (),
+  }
 }
 
 pub fn print_tag(repo: &Repository, tag: &Tag) {
@@ -122,32 +127,28 @@ pub fn run_supercommand(prefix: &str) -> Result<(), ExitFailure> {
     .setting(AppSettings::ColoredHelp)
     .get_matches();
 
-  match args.subcommand() {
-    (subcommand, Some(scmd)) => {
-      let command = format!("{}-{}", prefix, subcommand);
+  if let (subcommand, Some(cmd)) = args.subcommand() {
+    let command = format!("{}-{}", prefix, subcommand);
 
-      let subcommand_args: Vec<&str> = match scmd.values_of("") {
-        Some(values) => values.collect(),
-        None => Vec::new(),
-      };
+    let subcommand_args: Vec<&str> = match cmd.values_of("") {
+      Some(values) => values.collect(),
+      None => Vec::new(),
+    };
 
-      let exit_status = Command::new(&command)
-        .stdin(Stdio::inherit())
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit())
-        .args(&subcommand_args[..])
-        .spawn()
-        .and_then(|mut handle| handle.wait())
-        .with_context(|_| format!("couldn't execute command: `{}`", command))?;
+    let exit_status = Command::new(&command)
+      .stdin(Stdio::inherit())
+      .stdout(Stdio::inherit())
+      .stderr(Stdio::inherit())
+      .args(&subcommand_args[..])
+      .spawn()
+      .and_then(|mut handle| handle.wait())
+      .with_context(|_| format!("couldn't execute command: `{}`", command))?;
 
-      if !exit_status.success() {
-        // FIXME this should probably return an Err(...)?
-        eprintln!("{} exited with non-zero exit code", command);
-        exit(exit_status.code().unwrap_or(exitcode::SOFTWARE));
-      }
+    if !exit_status.success() {
+      // FIXME this should probably return an Err(...)?
+      eprintln!("{} exited with non-zero exit code", command);
+      exit(exit_status.code().unwrap_or(exitcode::SOFTWARE));
     }
-
-    _ => {}
   }
 
   Ok(())
@@ -187,12 +188,12 @@ pub fn find_from_name<'repo>(repo: &'repo Repository, name: &str) -> Result<Obje
   let head = iter.next();
   let tail: String = iter.collect();
 
-  if let None = head {
+  if head.is_none() {
     find_from_refname(repo, "HEAD")
   } else if let Some('#') = head {
     find_from_refname(repo, &format!("refs/tags/{}", tail))
   } else if let Some('@') = head {
-    if tail.len() == 0 {
+    if tail.is_empty() {
       find_from_refname(repo, "HEAD")
     } else {
       find_from_refname(repo, &format!("refs/heads/{}", tail))

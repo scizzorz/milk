@@ -43,7 +43,7 @@ fn main() -> Result<(), ExitFailure> {
     checkout.path(path);
   }
 
-  if args.paths.len() > 0 {
+  if !args.paths.is_empty() {
     for path in &args.paths {
       let oid = write_blob(&odb, path)?;
       println!("{}", highlight_named_oid(&repo, path, oid));

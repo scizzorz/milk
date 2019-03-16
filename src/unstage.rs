@@ -26,7 +26,7 @@ fn main() -> Result<(), ExitFailure> {
     .peel(ObjectType::Any)
     .with_context(|_| "couldn't peel to commit HEAD")?;
 
-  if args.paths.len() > 0 {
+  if !args.paths.is_empty() {
     repo
       .reset_default(Some(&commit), args.paths)
       .with_context(|_| "could not reset paths")?;
