@@ -71,7 +71,7 @@ functionality. It does not mean it's completely finished.
   found it weird that `git add` will move something from untracked to staged or
   from modified to staged. Feels like there's a missing step but I don't know
   if it actually makes any sense to break it up like this.
-* [ ] `ignore [paths]` - Add things to `.gitignore`
+* [x] `ignore [paths]` - Add things to `.gitignore`
 * [ ] `stage [paths]` - Stage files.
 * [x] `unstage [paths]` - Unstage files. Like `git reset --mixed`, but you can't
   move your HEAD at the same time. That's weird.
