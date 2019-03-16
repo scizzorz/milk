@@ -92,7 +92,7 @@ pub fn print_blob(_repo: &Repository, blob: &Blob) {
 
   // what happens on failure?
   match stdout.write(blob.content()) {
-    _ => ()
+    _ => (),
   }
 }
 

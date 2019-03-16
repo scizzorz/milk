@@ -63,7 +63,9 @@ fn handle_file(
     println!("Warning: file {} is currently tracked by git", filepath);
   };
 
-  let final_filepath = path.to_str().ok_or_else(|| failure::err_msg("Path is not UTF-8"))?;
+  let final_filepath = path
+    .to_str()
+    .ok_or_else(|| failure::err_msg("Path is not UTF-8"))?;
   Ok(Some(String::from(final_filepath)))
 }
 
