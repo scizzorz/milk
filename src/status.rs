@@ -16,7 +16,7 @@ struct Cli {
   show_ignored: bool,
 }
 
-fn get_status_string(status: &Status) -> String {
+fn get_status_string(status: Status) -> String {
   let index_string = if status.is_index_new() {
     "new".cyan()
   } else if status.is_index_modified() {
@@ -71,7 +71,7 @@ fn main() -> Result<(), ExitFailure> {
   for entry in statuses.iter() {
     let path = entry.path().unwrap_or("[invalid utf-8]");
     let status = entry.status();
-    let status_string = get_status_string(&status);
+    let status_string = get_status_string(status);
 
     println!("{} {}", status_string, path);
   }

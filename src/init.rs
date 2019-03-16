@@ -25,7 +25,7 @@ fn main() -> Result<(), ExitFailure> {
   repo_opts.no_reinit(true);
 
   let _repo = Repository::init_opts(args.repo_path, &repo_opts)
-    .with_context(|_| format!("couldn't initialize repository"))?;
+    .with_context(|_| "couldn't initialize repository")?;
 
   if !args.quiet {
     println!("Initialized repository.");
