@@ -37,7 +37,7 @@ fn handle_file(
       .read_line(&mut input)
       .context("Could not read stdin")?;
 
-    match input.trim_right() {
+    match input.trim_end() {
       "y" | "Y" | "" => (),
       _ => return Ok(None),
     }
