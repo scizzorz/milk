@@ -1,4 +1,3 @@
-use colored::*;
 use exitfailure::ExitFailure;
 use failure::ResultExt;
 use git2::BranchType;
@@ -11,8 +10,8 @@ struct Cli {
   repo_path: std::path::PathBuf,
   #[structopt(long = "remote", short = "r")]
   is_remote: bool,
-  #[structopt(long = "force", short = "f")]
-  force: bool,
+  // #[structopt(long = "force", short = "f")]
+  // force: bool,
   name: String,
 }
 

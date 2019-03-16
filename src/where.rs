@@ -1,4 +1,3 @@
-use colored::*;
 use exitfailure::ExitFailure;
 use failure::ResultExt;
 use git2::Repository;
