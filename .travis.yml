@@ -10,3 +10,11 @@ matrix:
     - rust: nightly
     - rust: beta
   fast_finish: true
+
+
+before_script:
+  - rustup component add clippy
+
+script:
+  - cargo build --verbose
+  - cargo clippy -- -D warnings
