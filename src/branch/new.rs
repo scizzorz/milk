@@ -3,6 +3,8 @@ use failure::ResultExt;
 use git2::ObjectType;
 use git2::Repository;
 use milk::find_from_name;
+use milk::highlight_named_oid;
+use milk::print_commit;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
@@ -27,6 +29,11 @@ fn main() -> Result<(), ExitFailure> {
     repo
       .branch(&args.name, &commit, false)
       .with_context(|_| "couldn't create branch")?;
+
+    println!("Created branch");
+    println!("{}", highlight_named_oid(&repo, &args.name, commit.id()));
+
+    print_commit(&repo, &commit);
   } else {
     Err(failure::err_msg("object was not a commit"))?;
   }
