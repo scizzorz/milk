@@ -4,6 +4,8 @@ use git2::BranchType;
 use git2::ObjectType;
 use git2::Repository;
 use milk::find_from_name;
+use milk::highlight_named_oid;
+use milk::print_commit;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
@@ -32,7 +34,14 @@ fn main() -> Result<(), ExitFailure> {
 
     repo
       .branch(&args.src_name, &commit, true)
-      .with_context(|_| "couldn't create branch")?;
+      .with_context(|_| "couldn't move branch")?;
+
+    println!("Moved branch");
+    println!(
+      "{}",
+      highlight_named_oid(&repo, &args.src_name, commit.id())
+    );
+    print_commit(&repo, &commit);
   } else {
     Err(failure::err_msg("dest object was not a commit"))?;
   }
