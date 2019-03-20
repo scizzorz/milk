@@ -73,6 +73,10 @@ name = "milk-branch"
 path = "src/branch/main.rs"
 
 [[bin]]
+name = "milk-branch-new"
+path = "src/branch/new.rs"
+
+[[bin]]
 name = "milk-branch-ls"
 path = "src/branch/ls.rs"
 

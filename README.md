@@ -91,7 +91,7 @@ functionality. It does not mean it's completely finished.
 
 #### Branch operations
 
-* [ ] `branch new` - Create a branch
+* [x] `branch new` - Create a branch
 * [x] `branch rm` - Remove a branch
 * [x] `branch ls` - List all branches
 * [x] `branch rename` - Rename a branch
