@@ -95,7 +95,7 @@ functionality. It does not mean it's completely finished.
 * [x] `branch rm` - Remove a branch
 * [x] `branch ls` - List all branches
 * [x] `branch rename` - Rename a branch
-* [ ] `branch mv` - Move a branch from its current location to a new one
+* [x] `branch mv` - Move a branch from its current location to a new one
 
 ## Gripes with Git
 

@@ -12,8 +12,8 @@ struct Cli {
   is_remote: bool,
   #[structopt(long = "force", short = "f")]
   force: bool,
-  from_name: String,
-  to_name: String,
+  src_name: String,
+  dest_name: String,
 }
 
 fn main() -> Result<(), ExitFailure> {
@@ -29,11 +29,11 @@ fn main() -> Result<(), ExitFailure> {
   };
 
   let mut branch = repo
-    .find_branch(&args.from_name, typ)
+    .find_branch(&args.src_name, typ)
     .with_context(|_| "couldn't find branch")?;
 
   branch
-    .rename(&args.to_name, args.force)
+    .rename(&args.dest_name, args.force)
     .with_context(|_| "couldn't rename branch")?;
 
   Ok(())

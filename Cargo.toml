@@ -85,5 +85,9 @@ name = "milk-branch-rename"
 path = "src/branch/rename.rs"
 
 [[bin]]
+name = "milk-branch-mv"
+path = "src/branch/mv.rs"
+
+[[bin]]
 name = "milk-branch-rm"
 path = "src/branch/rm.rs"
