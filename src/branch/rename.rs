@@ -2,6 +2,8 @@ use exitfailure::ExitFailure;
 use failure::ResultExt;
 use git2::BranchType;
 use git2::Repository;
+use milk::highlight_named_oid;
+use milk::print_commit;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
@@ -35,6 +37,19 @@ fn main() -> Result<(), ExitFailure> {
   branch
     .rename(&args.dest_name, args.force)
     .with_context(|_| "couldn't rename branch")?;
+
+  let target = branch
+    .get()
+    .target()
+    .ok_or_else(|| failure::err_msg("couldn't get branch target"))?;
+
+  let commit = repo
+    .find_commit(target)
+    .with_context(|_| "couldn't find commit")?;
+
+  println!("Renamed branch {}", args.src_name);
+  println!("{}", highlight_named_oid(&repo, &args.dest_name, target));
+  print_commit(&repo, &commit);
 
   Ok(())
 }
