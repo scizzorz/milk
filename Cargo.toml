@@ -33,6 +33,10 @@ name = "milk-head"
 path = "src/head.rs"
 
 [[bin]]
+name = "milk-stage"
+path = "src/stage.rs"
+
+[[bin]]
 name = "milk-unstage"
 path = "src/unstage.rs"
 
