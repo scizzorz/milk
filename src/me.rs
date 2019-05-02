@@ -5,7 +5,9 @@ use git2::Repository;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
+/// Display the current committing user
 struct Cli {
+  /// Path to the repository root
   #[structopt(long = "repo", short = "p", default_value = ".")]
   repo_path: std::path::PathBuf,
 }

@@ -7,11 +7,17 @@ use git2::StatusOptions;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
+/// Display status of work tree and index
 struct Cli {
+  /// Path to the repository root
   #[structopt(long = "repo", short = "p", default_value = ".")]
   repo_path: std::path::PathBuf,
+
+  /// Whether untracked files should be hidden or not
   #[structopt(long = "hide-untracked", short = "u")]
   hide_untracked: bool,
+
+  /// Whether ignored files should be shown or not
   #[structopt(long = "show-ignored", short = "i")]
   show_ignored: bool,
 }

@@ -6,7 +6,9 @@ use milk::print_commit;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
+/// Print information about HEAD
 struct Cli {
+  /// Path to the repository root
   #[structopt(long = "repo", short = "p", default_value = ".")]
   repo_path: std::path::PathBuf,
 }

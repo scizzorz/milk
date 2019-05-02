@@ -5,13 +5,17 @@ use git2::RepositoryInitOptions;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
+/// Initialize a new Git repository
 struct Cli {
+  /// Don't print information
   #[structopt(short = "q", long = "quiet")]
   quiet: bool,
 
+  /// Create a bare repository
   #[structopt(long = "bare")]
   bare: bool,
 
+  /// Path to the repository root
   #[structopt(long = "repo", short = "p", default_value = ".")]
   repo_path: std::path::PathBuf,
 }

@@ -6,11 +6,13 @@ use git2::ResetType;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
+/// Unstage files from the index
 struct Cli {
+  /// Path to the repository root
   #[structopt(long = "repo", short = "p", default_value = ".")]
   repo_path: std::path::PathBuf,
 
-  /// The paths to unstage
+  /// Paths to unstage
   #[structopt(raw())]
   paths: Vec<String>,
 }
