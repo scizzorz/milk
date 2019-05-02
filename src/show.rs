@@ -11,10 +11,13 @@ use milk::print_tree;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
+/// Display the contents of an object
 struct Cli {
+  /// Path to the repository root
   #[structopt(long = "repo", short = "p", default_value = ".")]
   repo_path: std::path::PathBuf,
 
+  /// Milk-style reference label to object
   #[structopt(default_value = "/HEAD")]
   name: String,
 }

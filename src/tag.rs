@@ -7,11 +7,18 @@ use milk::get_short_id;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
+/// Create a new tag
 struct Cli {
+  /// Path to the repository root
   #[structopt(long = "repo", short = "p", default_value = ".")]
   repo_path: std::path::PathBuf,
+
+  // FIXME make this Milk-style
+  /// Git-style ref label
   #[structopt(short = "ref", long = "r", default_value = "HEAD")]
   ref_name: String,
+
+  /// Name of created tag
   tag_name: String,
 }
 

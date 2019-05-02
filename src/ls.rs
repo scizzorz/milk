@@ -13,11 +13,17 @@ use std::process::exit;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
+/// List the contents of a tree
 struct Cli {
+  /// Path to the repository root
   #[structopt(long = "repo", short = "p", default_value = ".")]
   repo_path: std::path::PathBuf,
+
+  /// Milk-style reference label to list
   #[structopt(short = "ref", long = "r", default_value = "/HEAD")]
   ref_name: String,
+
+  /// Subtree path to list
   #[structopt(default_value = "")]
   tree_path: std::path::PathBuf,
 }

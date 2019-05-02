@@ -1,16 +1,19 @@
 use exitfailure::ExitFailure;
 use failure::ResultExt;
 use git2::Repository;
-use milk::highlight_named_oid;
-use milk::print_commit;
+use std::path::Path;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
-/// Print information about HEAD
+/// Stage files from the index
 struct Cli {
   /// Path to the repository root
   #[structopt(long = "repo", short = "p", default_value = ".")]
   repo_path: std::path::PathBuf,
+
+  /// Paths to stage
+  #[structopt(raw())]
+  paths: Vec<String>,
 }
 
 fn main() -> Result<(), ExitFailure> {
@@ -18,16 +21,17 @@ fn main() -> Result<(), ExitFailure> {
   env_logger::init();
 
   let repo = Repository::discover(args.repo_path).with_context(|_| "couldn't open repository")?;
-  let head = repo.head().with_context(|_| "couldn't locate HEAD")?;
-  let commit = head
-    .peel_to_commit()
-    .with_context(|_| "couldn't peel to commit HEAD")?;
 
-  // tf do I do if these aren't UTF-8? Quit?
-  let head_name = head.shorthand().unwrap_or("[???]");
-  println!("{}", highlight_named_oid(&repo, head_name, commit.id()));
+  let mut index = repo.index().with_context(|_| "couldn't open index")?;
 
-  print_commit(&repo, &commit);
+  for path in args.paths {
+    index
+      .add_path(Path::new(&path))
+      .with_context(|_| "couldn't add path")?;
+    println!("Staged {}", path);
+  }
+
+  index.write().with_context(|_| "couldn't write index")?;
 
   Ok(())
 }

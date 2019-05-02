@@ -12,11 +12,13 @@ use std::io::Read;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
+/// Reset untracked modifications to files
 struct Cli {
+  /// Path to the repository root
   #[structopt(long = "repo", short = "p", default_value = ".")]
   repo_path: std::path::PathBuf,
 
-  /// The paths to clean
+  /// Paths to clean
   #[structopt(raw())]
   paths: Vec<String>,
 }

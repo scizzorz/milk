@@ -7,11 +7,16 @@ use std::io::Write;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
+/// Dump contents of an object into a file
 struct Cli {
+  /// Path to the repository root
   #[structopt(long = "repo", short = "p", default_value = ".")]
   repo_path: std::path::PathBuf,
 
+  /// Object ID to read contents from
   object_name: String,
+
+  /// File path to write object
   path: std::path::PathBuf,
 }
 
