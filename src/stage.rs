@@ -1,3 +1,4 @@
+use std::path::Path;
 use exitfailure::ExitFailure;
 use failure::ResultExt;
 use git2::Repository;
@@ -7,7 +8,10 @@ use structopt::StructOpt;
 struct Cli {
   #[structopt(long = "repo", short = "p", default_value = ".")]
   repo_path: std::path::PathBuf,
-  file_path: std::path::PathBuf,
+
+  /// The paths to unstage
+  #[structopt(raw())]
+  paths: Vec<String>,
 }
 
 fn main() -> Result<(), ExitFailure> {
@@ -18,13 +22,13 @@ fn main() -> Result<(), ExitFailure> {
 
   let mut index = repo.index().with_context(|_| "couldn't open index")?;
 
-  index.add_path(&args.file_path).with_context(|_| "couldn't add path")?;
+  for path in args.paths {
+    index.add_path(Path::new(&path)).with_context(|_| "couldn't add path")?;
+    println!("Staged {}", path);
+  }
 
   index.write().with_context(|_| "couldn't write index")?;
 
-  let printable_path = args.file_path.to_str().unwrap_or("path is not valid UTF-8");
-
-  println!("Staged {}", printable_path);
 
   Ok(())
 }
