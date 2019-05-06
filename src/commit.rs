@@ -14,8 +14,9 @@ use std::process::exit;
 use std::process::Command;
 use structopt::StructOpt;
 
-#[derive(StructOpt)]
 /// Create a new commit
+#[derive(StructOpt)]
+#[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
 struct Cli {
   /// Path to the repository root
   #[structopt(long = "repo", short = "p", default_value = ".")]

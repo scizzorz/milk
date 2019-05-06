@@ -5,8 +5,9 @@ use git2::Repository;
 use git2::ResetType;
 use structopt::StructOpt;
 
-#[derive(StructOpt)]
 /// Unstage files from the index
+#[derive(StructOpt)]
+#[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
 struct Cli {
   /// Path to the repository root
   #[structopt(long = "repo", short = "p", default_value = ".")]

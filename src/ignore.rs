@@ -7,8 +7,9 @@ use std::io::prelude::*;
 use std::path::Path;
 use structopt::StructOpt;
 
-#[derive(StructOpt)]
 /// Ignore files or patterns
+#[derive(StructOpt)]
+#[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
 struct Cli {
   /// Path to the repository root
   #[structopt(long = "repo", short = "p", default_value = ".")]

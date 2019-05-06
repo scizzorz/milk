@@ -4,8 +4,9 @@ use git2::Repository;
 use std::path::Path;
 use structopt::StructOpt;
 
-#[derive(StructOpt)]
 /// Stage files from the index
+#[derive(StructOpt)]
+#[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
 struct Cli {
   /// Path to the repository root
   #[structopt(long = "repo", short = "p", default_value = ".")]

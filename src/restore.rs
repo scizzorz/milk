@@ -6,8 +6,9 @@ use std::fs::OpenOptions;
 use std::io::Write;
 use structopt::StructOpt;
 
-#[derive(StructOpt)]
 /// Dump contents of an object into a file
+#[derive(StructOpt)]
+#[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
 struct Cli {
   /// Path to the repository root
   #[structopt(long = "repo", short = "p", default_value = ".")]

@@ -5,8 +5,9 @@ use milk::highlight_named_oid;
 use milk::print_commit;
 use structopt::StructOpt;
 
-#[derive(StructOpt)]
 /// Print information about HEAD
+#[derive(StructOpt)]
+#[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
 struct Cli {
   /// Path to the repository root
   #[structopt(long = "repo", short = "p", default_value = ".")]

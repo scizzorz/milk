@@ -5,8 +5,9 @@ use milk::find_from_name;
 use milk::print_object;
 use structopt::StructOpt;
 
-#[derive(StructOpt)]
 /// Display the contents of an object
+#[derive(StructOpt)]
+#[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
 struct Cli {
   /// Path to the repository root
   #[structopt(long = "repo", short = "p", default_value = ".")]

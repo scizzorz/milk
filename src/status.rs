@@ -6,8 +6,9 @@ use git2::Status;
 use git2::StatusOptions;
 use structopt::StructOpt;
 
-#[derive(StructOpt)]
 /// Display status of work tree and index
+#[derive(StructOpt)]
+#[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
 struct Cli {
   /// Path to the repository root
   #[structopt(long = "repo", short = "p", default_value = ".")]

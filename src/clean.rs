@@ -11,8 +11,9 @@ use std::fs::File;
 use std::io::Read;
 use structopt::StructOpt;
 
-#[derive(StructOpt)]
 /// Reset untracked modifications to files
+#[derive(StructOpt)]
+#[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
 struct Cli {
   /// Path to the repository root
   #[structopt(long = "repo", short = "p", default_value = ".")]

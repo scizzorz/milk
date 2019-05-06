@@ -3,7 +3,9 @@ use failure::ResultExt;
 use git2::Repository;
 use structopt::StructOpt;
 
+/// Print out the working tree location of a repository
 #[derive(StructOpt)]
+#[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
 struct Cli {
   #[structopt(long = "repo", short = "p", default_value = ".")]
   repo_path: std::path::PathBuf,

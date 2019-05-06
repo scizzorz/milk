@@ -12,8 +12,9 @@ use milk::print_tree;
 use std::process::exit;
 use structopt::StructOpt;
 
-#[derive(StructOpt)]
 /// List the contents of a tree
+#[derive(StructOpt)]
+#[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
 struct Cli {
   /// Path to the repository root
   #[structopt(long = "repo", short = "p", default_value = ".")]

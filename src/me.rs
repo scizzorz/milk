@@ -4,8 +4,9 @@ use failure::ResultExt;
 use git2::Repository;
 use structopt::StructOpt;
 
-#[derive(StructOpt)]
 /// Display the current committing user
+#[derive(StructOpt)]
+#[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
 struct Cli {
   /// Path to the repository root
   #[structopt(long = "repo", short = "p", default_value = ".")]

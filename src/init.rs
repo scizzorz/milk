@@ -4,8 +4,9 @@ use git2::Repository;
 use git2::RepositoryInitOptions;
 use structopt::StructOpt;
 
-#[derive(StructOpt)]
 /// Initialize a new Git repository
+#[derive(StructOpt)]
+#[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
 struct Cli {
   /// Don't print information
   #[structopt(short = "q", long = "quiet")]
