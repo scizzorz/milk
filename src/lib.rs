@@ -115,6 +115,34 @@ pub fn print_tag(repo: &Repository, tag: &Tag) {
   println!("{}", tag.message().unwrap_or(""));
 }
 
+pub fn print_object(repo: &Repository, object: &Object) {
+  match object.kind() {
+    Some(ObjectType::Blob) => {
+      println!("{}", highlight_named_oid(&repo, "blob", object.id()));
+      let blob = object.as_blob().unwrap();
+      print_blob(repo, &blob);
+    }
+    Some(ObjectType::Tree) => {
+      println!("{}", highlight_named_oid(&repo, "tree", object.id()));
+      let tree = object.as_tree().unwrap();
+      print_tree(repo, &tree);
+    }
+    Some(ObjectType::Commit) => {
+      println!("{}", highlight_named_oid(&repo, "commit", object.id()));
+      let commit = object.as_commit().unwrap();
+      print_commit(repo, &commit);
+    }
+    Some(ObjectType::Tag) => {
+      println!("{}", highlight_named_oid(&repo, "tag", object.id()));
+      let tag = object.as_tag().unwrap();
+      print_tag(repo, &tag);
+    }
+    _ => {
+      println!("{}", highlight_named_oid(&repo, "unknown", object.id()));
+    }
+  }
+}
+
 pub fn highlight_named_oid(repo: &Repository, name: &str, oid: Oid) -> String {
   format!("{} {}", name.cyan(), get_short_id(repo, oid).bright_black())
 }
