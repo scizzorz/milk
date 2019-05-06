@@ -1,4 +1,3 @@
-use colored::*;
 use exitfailure::ExitFailure;
 use failure::Error;
 use failure::ResultExt;
@@ -7,7 +6,6 @@ use std::env;
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
-use std::io::SeekFrom;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
