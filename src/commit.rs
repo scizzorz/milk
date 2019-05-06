@@ -10,6 +10,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 use structopt::StructOpt;
+use std::process::exit;
 
 #[derive(StructOpt)]
 /// Create a new commit
@@ -88,7 +89,11 @@ fn main() -> Result<(), ExitFailure> {
   let message =
     temporary_editor(&message_file_path, "").with_context(|_| "couldn't get message")?;
 
-  // FIXME fix commit message
+  if message.is_empty() {
+    eprintln!("Aborting due to empty commit message.");
+    exit(exitcode::DATAERR);
+  }
+
   repo
     .commit(Some("HEAD"), &sig, &sig, &message, &tree, &parents)
     .with_context(|_| "couldn't write commit")?;
