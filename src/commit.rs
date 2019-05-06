@@ -1,3 +1,4 @@
+use std::fs::File;
 // use std::fs::Open;
 // use std::io::ReadWrite;
 // use std::io::SeekSet;
@@ -55,7 +56,7 @@ fn temporary_editor(path: &Path, contents: &str) -> Result<String, Error> {
 
     editor_proc.wait().with_context(|_| "editor failed for some reason")?;
 
-    file.seek(SeekFrom::Start(0)).with_context(|_| "couldn't seek in file")?;
+    let mut file = File::open(path).with_context(|_| "couldn't re-open file")?;
 
     let mut contents = String::new();
     file.read_to_string(&mut contents).with_context(|_| "couldn't read from file")?;
