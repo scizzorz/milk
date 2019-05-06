@@ -11,6 +11,7 @@ use std::path::PathBuf;
 use std::process::Command;
 use structopt::StructOpt;
 use std::process::exit;
+use milk::print_commit;
 
 #[derive(StructOpt)]
 /// Create a new commit
@@ -94,9 +95,13 @@ fn main() -> Result<(), ExitFailure> {
     exit(exitcode::DATAERR);
   }
 
-  repo
+  let new_commit_id = repo
     .commit(Some("HEAD"), &sig, &sig, &message, &tree, &parents)
     .with_context(|_| "couldn't write commit")?;
+
+  let new_commit = repo.find_commit(new_commit_id).with_context(|_| "couldn't find commit")?;
+
+  print_commit(&repo, &new_commit);
 
   Ok(())
 }
