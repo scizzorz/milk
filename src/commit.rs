@@ -2,16 +2,16 @@ use exitfailure::ExitFailure;
 use failure::Error;
 use failure::ResultExt;
 use git2::Repository;
+use milk::print_commit;
 use std::env;
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
 use std::path::Path;
 use std::path::PathBuf;
+use std::process::exit;
 use std::process::Command;
 use structopt::StructOpt;
-use std::process::exit;
-use milk::print_commit;
 
 #[derive(StructOpt)]
 /// Create a new commit
@@ -99,7 +99,9 @@ fn main() -> Result<(), ExitFailure> {
     .commit(Some("HEAD"), &sig, &sig, &message, &tree, &parents)
     .with_context(|_| "couldn't write commit")?;
 
-  let new_commit = repo.find_commit(new_commit_id).with_context(|_| "couldn't find commit")?;
+  let new_commit = repo
+    .find_commit(new_commit_id)
+    .with_context(|_| "couldn't find commit")?;
 
   print_commit(&repo, &new_commit);
 
