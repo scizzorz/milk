@@ -12,7 +12,7 @@ use std::process::Command;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
-/// Display status of work tree and index
+/// Create a new commit
 struct Cli {
   /// Path to the repository root
   #[structopt(long = "repo", short = "p", default_value = ".")]
@@ -20,38 +20,31 @@ struct Cli {
 }
 
 fn temporary_editor(path: &Path, contents: &str) -> Result<String, Error> {
+  // FIXME one of the Err cases here is for a non-unicode value... I'd assume you
+  // can run a non-unicode command, no?
+  let editor = env::var("EDITOR").with_context(|_| "$EDITOR is not defined.")?;
+
   let mut file = OpenOptions::new()
     .write(true)
     .truncate(true)
     .create(true)
     .open(path)
-    .with_context(|_| "couldn't open temp commit message file")?;
+    .with_context(|_| "couldn't open $EDITOR file")?;
 
   file
     .write_all(contents.as_bytes())
-    .with_context(|_| "couldn't write temp commit message")?;
+    .with_context(|_| "couldn't write $EDITOR file contents")?;
+
   file
     .sync_all()
-    .with_context(|_| "couldn't sync file contents")?;
-
-  // FIXME one of the Err cases here is a non-unicode value... I'd assume you
-  // can run a non-unicode command, no?
-  let editor = match env::var("VISUAL") {
-    Ok(val) => val,
-    Err(_) => match env::var("EDITOR") {
-      Ok(val) => val,
-      Err(_) => panic!("Neither $VISUAL nor $EDITOR is happy."),
-    },
-  };
+    .with_context(|_| "couldn't sync $EDITOR file contents")?;
 
   let mut editor_command = Command::new(editor);
   editor_command.arg(&path);
 
-  let mut editor_proc = editor_command
+  editor_command
     .spawn()
-    .with_context(|_| "couldn't spawn editor")?;
-
-  editor_proc
+    .with_context(|_| "couldn't spawn editor")?
     .wait()
     .with_context(|_| "editor failed for some reason")?;
 
