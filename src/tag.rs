@@ -1,9 +1,8 @@
-use colored::*;
 use exitfailure::ExitFailure;
 use failure::ResultExt;
-use git2::ObjectType;
 use git2::Repository;
-use milk::get_short_id;
+use milk::find_from_name;
+use milk::print_object;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
@@ -13,9 +12,8 @@ struct Cli {
   #[structopt(long = "repo", short = "p", default_value = ".")]
   repo_path: std::path::PathBuf,
 
-  // FIXME make this Milk-style
-  /// Git-style ref label
-  #[structopt(short = "ref", long = "r", default_value = "HEAD")]
+  /// Milk-style reference label to tag
+  #[structopt(short = "ref", long = "r", default_value = "/HEAD")]
   ref_name: String,
 
   /// Name of created tag
@@ -28,17 +26,9 @@ fn main() -> Result<(), ExitFailure> {
 
   let repo = Repository::discover(&args.repo_path).with_context(|_| "couldn't open repository")?;
 
-  // FIXME this isn't a good way to look up references
-  let ref_ = repo
-    .find_reference(&args.ref_name)
-    .with_context(|_| format!("couldn't find ref `{}`", args.ref_name))?;
+  let object = find_from_name(&repo, &args.ref_name).with_context(|_| "couldn't look up object")?;
+  print_object(&repo, &object);
 
-  let object = ref_
-    .peel(ObjectType::Any)
-    .with_context(|_| "couldn't peel ref")?;
-  println!("{}", get_short_id(&repo, object.id()).bright_black());
-
-  // TODO add annotated tags
   repo
     .tag_lightweight(&args.tag_name, &object, false)
     .with_context(|_| "couldn't create tag")?;
