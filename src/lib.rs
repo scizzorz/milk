@@ -21,7 +21,6 @@ use std::io;
 use std::io::Write;
 use std::process::exit;
 use std::process::Command;
-use std::process::Stdio;
 
 pub fn print_commit(repo: &Repository, commit: &Commit) {
   let author = commit.author();
@@ -136,9 +135,6 @@ pub fn run_supercommand(prefix: &str) -> Result<(), ExitFailure> {
     };
 
     let exit_status = Command::new(&command)
-      .stdin(Stdio::inherit())
-      .stdout(Stdio::inherit())
-      .stderr(Stdio::inherit())
       .args(&subcommand_args[..])
       .spawn()
       .and_then(|mut handle| handle.wait())
