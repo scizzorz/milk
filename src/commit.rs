@@ -92,6 +92,7 @@ fn main() -> Result<(), ExitFailure> {
 
   let message =
     temporary_editor(&message_file_path, "").with_context(|_| "couldn't get message")?;
+  let message = message.trim();
 
   if message.is_empty() {
     eprintln!("Aborting due to empty commit message.");
