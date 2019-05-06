@@ -56,6 +56,10 @@ fn temporary_editor(path: &Path, contents: &str) -> Result<String, Error> {
     .read_to_string(&mut contents)
     .with_context(|_| "couldn't read from file")?;
 
+  if std::fs::remove_file(&path).is_err() {
+    eprintln!("WARNING: Unable to delete {} after use", path.display());
+  }
+
   Ok(contents)
 }
 
