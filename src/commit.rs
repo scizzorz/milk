@@ -2,6 +2,7 @@ use exitfailure::ExitFailure;
 use failure::Error;
 use failure::ResultExt;
 use git2::Repository;
+use milk::highlight_named_oid;
 use milk::print_commit;
 use std::env;
 use std::fs::File;
@@ -107,6 +108,8 @@ fn main() -> Result<(), ExitFailure> {
     .find_commit(new_commit_id)
     .with_context(|_| "couldn't find commit")?;
 
+  let head_name = head.shorthand().unwrap_or("[???]");
+  println!("{}", highlight_named_oid(&repo, head_name, commit.id()));
   print_commit(&repo, &new_commit);
 
   Ok(())
