@@ -46,9 +46,8 @@ fn temporary_editor(path: &Path, contents: &str) -> Result<String, Error> {
 
   editor_command
     .spawn()
-    .with_context(|_| "couldn't spawn editor")?
-    .wait()
-    .with_context(|_| "editor failed for some reason")?;
+    .and_then(|mut handle| handle.wait())
+    .with_context(|_| "$EDITOR failed for some reason")?;
 
   let mut file = File::open(path).with_context(|_| "couldn't re-open file")?;
 
