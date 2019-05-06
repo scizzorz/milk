@@ -1,8 +1,8 @@
-use milk::find_from_name;
 use exitfailure::ExitFailure;
 use failure::ResultExt;
-use milk::print_object;
 use git2::Repository;
+use milk::find_from_name;
+use milk::print_object;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
