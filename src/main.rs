@@ -19,53 +19,59 @@ struct Cli {
 }
 
 #[derive(StructOpt, Debug)]
+struct InitCli {
+  /// Create a bare repository
+  #[structopt(long = "bare")]
+  bare: bool,
+}
+
+#[derive(StructOpt, Debug)]
+struct ListCli {
+  /// Milk-style reference label to list
+  #[structopt(short = "ref", long = "r", default_value = "/HEAD")]
+  ref_name: String,
+
+  /// Subtree path to list
+  #[structopt(default_value = "")]
+  tree_path: std::path::PathBuf,
+}
+
+#[derive(StructOpt, Debug)]
 #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
 enum Command {
   /// Initialize a new Git repository
   #[structopt(name = "init")]
   #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
-  Init {
-    /// Create a bare repository
-    #[structopt(long = "bare")]
-    bare: bool,
-  },
+  Init(InitCli),
 
   /// List the contents of a tree
   #[structopt(name = "ls")]
   #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
-  List {
-    /// Milk-style reference label to list
-    #[structopt(short = "ref", long = "r", default_value = "/HEAD")]
-    ref_name: String,
-
-    /// Subtree path to list
-    #[structopt(default_value = "")]
-    tree_path: std::path::PathBuf,
-  }
+  List(ListCli),
 }
 
-fn init(bare: bool) -> Result<(), Error> {
-  println!("init --bare={}", bare);
+fn init(args: &InitCli) -> Result<(), Error> {
+  println!("init {:?}", args);
   Ok(())
 }
 
-fn ls(ref_name: &str, tree_path: std::path::PathBuf) -> Result<(), Error> {
-  println!("ls -r {} {}", ref_name, tree_path.display());
+fn ls(args: &ListCli) -> Result<(), Error> {
+  println!("ls {:?}", args);
   Ok(())
 }
 
 fn main() -> Result<(), ExitFailure> {
   let args = Cli::from_args();
   env_logger::init();
-  //run_supercommand("milk")
+
   println!("{:?}", args);
   let ok = match args.command {
-    Command::Init {bare} => {
-      init(bare)
+    Command::Init(args) => {
+      init(&args)
     },
 
-    Command::List {ref_name, tree_path} => {
-      ls(&ref_name, tree_path)
+    Command::List(args) => {
+      ls(&args)
     }
   }?;
 
