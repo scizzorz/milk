@@ -66,13 +66,9 @@ fn main() -> Result<(), ExitFailure> {
 
   println!("{:?}", args);
   let ok = match args.command {
-    Command::Init(args) => {
-      init(&args)
-    },
+    Command::Init(args) => init(&args),
 
-    Command::List(args) => {
-      ls(&args)
-    }
+    Command::List(args) => ls(&args),
   }?;
 
   Ok(ok)
