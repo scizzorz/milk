@@ -9,7 +9,7 @@ fn main() -> Result<(), ExitFailure> {
   env_logger::init();
 
   println!("{:?}", args);
-  let ok = cmd::main(args).with_context(|_| "couldn't execute command")?;
+  cmd::main(args).with_context(|_| "couldn't execute command")?;
 
-  Ok(ok)
+  Ok(())
 }
