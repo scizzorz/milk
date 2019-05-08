@@ -62,7 +62,7 @@ functionality. It does not mean it's completely finished.
   `show` defaulting to `HEAD`.
 * [x] `where` - Show the base directory for the working repo
 * [x] `status` - Obvious
-* [ ] `diff` - Obvious
+* [x] `diff` - Obvious
 * [ ] `log` - Obvious
 
 #### File operations
