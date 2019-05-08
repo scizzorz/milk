@@ -3,12 +3,12 @@ use super::cli::Command;
 use failure::Error;
 
 pub fn main(args: cli::Root) -> Result<(), Error> {
-  let ok = match args.command {
+  match args.command {
     Command::Init(args) => init(&args),
     Command::List(args) => ls(&args),
   }?;
 
-  Ok(ok)
+  Ok(())
 }
 
 pub fn init(args: &cli::Init) -> Result<(), Error> {
