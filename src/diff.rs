@@ -10,7 +10,7 @@ use git2::Tree;
 use milk::find_from_name;
 use structopt::StructOpt;
 
-/// Create a new commit
+/// Print a diff between two trees
 #[derive(StructOpt)]
 #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
 struct Cli {

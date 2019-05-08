@@ -6,6 +6,10 @@ pub fn main(args: cli::Root) -> Result<(), Error> {
   match args.command {
     Command::Init(args) => init(&args),
     Command::List(args) => ls(&args),
+    _ => {
+      println!("Can't run mystery command.");
+      Ok(())
+    }
   }?;
 
   Ok(())
