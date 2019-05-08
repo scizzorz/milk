@@ -3,6 +3,7 @@ use exitfailure::ExitFailure;
 use failure::format_err;
 use failure::Error;
 use failure::ResultExt;
+use git2::Diff;
 use git2::DiffOptions;
 use git2::Repository;
 use git2::Tree;
@@ -35,11 +36,13 @@ enum DiffTarget<'a> {
   Name(&'a str),
 }
 
-fn str_to_target(s: &str) -> DiffTarget {
-  match s {
-    "/WORK" => DiffTarget::WorkingTree,
-    "/INDEX" => DiffTarget::Index,
-    _ => DiffTarget::Name(s),
+impl<'a> DiffTarget<'a> {
+  fn from_str(s: &str) -> DiffTarget {
+    match s {
+      "/WORK" => DiffTarget::WorkingTree,
+      "/INDEX" => DiffTarget::Index,
+      _ => DiffTarget::Name(s),
+    }
   }
 }
 
@@ -51,19 +54,15 @@ fn name_to_tree<'repo>(repo: &'repo Repository, s: &str) -> Result<Tree<'repo>, 
   Ok(tree)
 }
 
-fn main() -> Result<(), ExitFailure> {
-  let args = Cli::from_args();
-  env_logger::init();
-
-  let repo = Repository::discover(args.repo_path).with_context(|_| "couldn't open repository")?;
-
+fn make_diff<'repo>(
+  repo: &'repo Repository,
+  old_target: DiffTarget,
+  new_target: DiffTarget,
+) -> Result<Diff<'repo>, Error> {
   let mut options = DiffOptions::new();
 
-  let old_target = str_to_target(&args.old_tree);
-  let new_target = str_to_target(&args.new_tree);
-
-  let diff = match (old_target, new_target) {
-    // tree..working
+  match (old_target, new_target) {
+    // tree..
     (DiffTarget::Name(old), DiffTarget::WorkingTree) => {
       let old_tree = name_to_tree(&repo, old).with_context(|_| "couldn't look up old tree")?;
 
@@ -115,11 +114,13 @@ fn main() -> Result<(), ExitFailure> {
     }
 
     (DiffTarget::Index, DiffTarget::Index) => {
+      // FIXME why? it probably works...
       Err(format_err!("Cannot diff between identical targets"))
     }
 
     // working..
     (DiffTarget::WorkingTree, DiffTarget::WorkingTree) => {
+      // FIXME why? it probably works...
       Err(format_err!("Cannot diff between identical targets"))
     }
     (DiffTarget::WorkingTree, DiffTarget::Name(new)) => {
@@ -141,7 +142,18 @@ fn main() -> Result<(), ExitFailure> {
       Ok(diff)
     }
   }
-  .with_context(|_| "failed to diff")?;
+}
+
+fn main() -> Result<(), ExitFailure> {
+  let args = Cli::from_args();
+  env_logger::init();
+
+  let repo = Repository::discover(args.repo_path).with_context(|_| "couldn't open repository")?;
+
+  let old_target = DiffTarget::from_str(&args.old_tree);
+  let new_target = DiffTarget::from_str(&args.new_tree);
+
+  let diff = make_diff(&repo, old_target, new_target).with_context(|_| "failed to diff")?;
 
   // this API is literally insane
   // example code yanked from here:
