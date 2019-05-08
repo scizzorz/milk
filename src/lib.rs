@@ -22,6 +22,8 @@ use std::io::Write;
 use std::process::exit;
 use std::process::Command;
 
+pub mod cli;
+
 pub fn print_commit(repo: &Repository, commit: &Commit) {
   let author = commit.author();
   let author_name = author.name().unwrap_or("[???]");
