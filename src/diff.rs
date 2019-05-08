@@ -1,3 +1,4 @@
+use colored::*;
 use milk::find_from_name;
 use exitfailure::ExitFailure;
 use failure::Error;
@@ -47,11 +48,13 @@ fn main() -> Result<(), ExitFailure> {
   // this API is literally insane
   // example code yanked from here: https://github.com/rust-lang/git2-rs/blob/master/examples/diff.rs#L153-L179
   diff.print(git2::DiffFormat::Patch, |_delta, _hunk, line| {
+    let display = std::str::from_utf8(line.content()).unwrap();
     match line.origin() {
-      '+' | '-' | ' ' => print!("{}", line.origin()),
-      _ => {}
+      '+' => print!("{}{}", "+".green(), display.green()),
+      '-' => print!("{}{}", "-".red(), display.red()),
+      ' ' => print!(" {}", display.white()),
+      _ => print!("{}", display.cyan()),
     }
-    print!("{}", std::str::from_utf8(line.content()).unwrap());
     true
   }).with_context(|_| "failed to print diff")?;
 
