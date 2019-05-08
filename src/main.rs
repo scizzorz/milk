@@ -1,29 +1,15 @@
 use exitfailure::ExitFailure;
-use failure::Error;
-use structopt::StructOpt;
+use failure::ResultExt;
 use milk::cli;
-use milk::cli::Command;
-
-fn init(args: &cli::Init) -> Result<(), Error> {
-  println!("init {:?}", args);
-  Ok(())
-}
-
-fn ls(args: &cli::List) -> Result<(), Error> {
-  println!("ls {:?}", args);
-  Ok(())
-}
+use milk::cmd;
+use structopt::StructOpt;
 
 fn main() -> Result<(), ExitFailure> {
   let args = cli::Root::from_args();
   env_logger::init();
 
   println!("{:?}", args);
-  let ok = match args.command {
-    Command::Init(args) => init(&args),
-
-    Command::List(args) => ls(&args),
-  }?;
+  let ok = cmd::main(args).with_context(|_| "couldn't execute command")?;
 
   Ok(ok)
 }

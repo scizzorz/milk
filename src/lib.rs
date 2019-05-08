@@ -23,6 +23,7 @@ use std::process::exit;
 use std::process::Command;
 
 pub mod cli;
+pub mod cmd;
 
 pub fn print_commit(repo: &Repository, commit: &Commit) {
   let author = commit.author();
