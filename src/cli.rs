@@ -4,6 +4,15 @@ use structopt::StructOpt;
 #[derive(StructOpt, Debug)]
 #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
 pub struct Root {
+  #[structopt(flatten)]
+  pub globals: Global,
+
+  #[structopt(subcommand)]
+  pub command: Command,
+}
+
+#[derive(StructOpt, Debug)]
+pub struct Global {
   /// Path to the repository root
   #[structopt(long = "repo", short = "p", default_value = ".")]
   pub repo_path: std::path::PathBuf,
@@ -11,9 +20,6 @@ pub struct Root {
   /// Don't print information
   #[structopt(long = "quiet", short = "q")]
   pub quiet: bool,
-
-  #[structopt(subcommand)]
-  pub command: Command,
 }
 
 // FIXME surely there's a way to propagate ColoredHelp to all members...?

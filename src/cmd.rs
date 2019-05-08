@@ -4,8 +4,8 @@ use failure::Error;
 
 pub fn main(args: cli::Root) -> Result<(), Error> {
   match args.command {
-    Command::Init(args) => init(&args),
-    Command::List(args) => ls(&args),
+    Command::Init(cmd_args) => init(&args.globals, &cmd_args),
+    Command::List(cmd_args) => ls(&args.globals, &cmd_args),
     _ => {
       println!("Can't run mystery command.");
       Ok(())
@@ -15,12 +15,12 @@ pub fn main(args: cli::Root) -> Result<(), Error> {
   Ok(())
 }
 
-pub fn init(args: &cli::Init) -> Result<(), Error> {
-  println!("init {:?}", args);
+pub fn init(globals: &cli::Global, args: &cli::Init) -> Result<(), Error> {
+  println!("init {:?} + {:?}", globals, args);
   Ok(())
 }
 
-pub fn ls(args: &cli::List) -> Result<(), Error> {
-  println!("ls {:?}", args);
+pub fn ls(globals: &cli::Global, args: &cli::List) -> Result<(), Error> {
+  println!("ls {:?} + {:?}", globals, args);
   Ok(())
 }
