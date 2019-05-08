@@ -1,9 +1,10 @@
 use colored::*;
-use milk::find_from_name;
 use exitfailure::ExitFailure;
 use failure::Error;
 use failure::ResultExt;
+use git2::DiffOptions;
 use git2::Repository;
+use milk::find_from_name;
 use milk::highlight_named_oid;
 use milk::print_commit;
 use std::env;
@@ -15,7 +16,6 @@ use std::path::PathBuf;
 use std::process::exit;
 use std::process::Command;
 use structopt::StructOpt;
-use git2::DiffOptions;
 
 /// Create a new commit
 #[derive(StructOpt)]
@@ -43,20 +43,24 @@ fn main() -> Result<(), ExitFailure> {
     .peel_to_tree()
     .with_context(|_| "couldn't peel to commit HEAD")?;
 
-  let diff = repo.diff_tree_to_workdir(Some(&tree), Some(&mut options)).with_context(|_| "failed to diff")?;
+  let diff = repo
+    .diff_tree_to_workdir(Some(&tree), Some(&mut options))
+    .with_context(|_| "failed to diff")?;
 
   // this API is literally insane
   // example code yanked from here: https://github.com/rust-lang/git2-rs/blob/master/examples/diff.rs#L153-L179
-  diff.print(git2::DiffFormat::Patch, |_delta, _hunk, line| {
-    let display = std::str::from_utf8(line.content()).unwrap();
-    match line.origin() {
-      '+' => print!("{}{}", "+".green(), display.green()),
-      '-' => print!("{}{}", "-".red(), display.red()),
-      ' ' => print!(" {}", display.white()),
-      _ => print!("{}", display.cyan()),
-    }
-    true
-  }).with_context(|_| "failed to print diff")?;
+  diff
+    .print(git2::DiffFormat::Patch, |_delta, _hunk, line| {
+      let display = std::str::from_utf8(line.content()).unwrap();
+      match line.origin() {
+        '+' => print!("{}{}", "+".green(), display.green()),
+        '-' => print!("{}{}", "-".red(), display.red()),
+        ' ' => print!(" {}", display.white()),
+        _ => print!("{}", display.cyan()),
+      }
+      true
+    })
+    .with_context(|_| "failed to print diff")?;
 
   Ok(())
 }
