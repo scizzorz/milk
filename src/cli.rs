@@ -123,7 +123,6 @@ pub struct List {
 #[derive(StructOpt, Debug)]
 pub struct Clean {
   /// Paths to clean
-  #[structopt(raw())]
   paths: Vec<String>,
 }
 
@@ -179,7 +178,6 @@ pub struct Show {
 #[derive(StructOpt, Debug)]
 pub struct Stage {
   /// Paths to stage
-  #[structopt(raw())]
   paths: Vec<String>,
 }
 
@@ -207,7 +205,6 @@ pub struct Tag {
 #[derive(StructOpt, Debug)]
 pub struct Unstage {
   /// Paths to unstage
-  #[structopt(raw())]
   paths: Vec<String>,
 }
 
