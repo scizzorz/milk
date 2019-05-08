@@ -61,6 +61,10 @@ name = "milk-where"
 path = "src/where.rs"
 
 [[bin]]
+name = "milk-diff"
+path = "src/diff.rs"
+
+[[bin]]
 name = "milk-commit"
 path = "src/commit.rs"
 
