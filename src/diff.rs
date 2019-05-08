@@ -1,20 +1,9 @@
 use colored::*;
 use exitfailure::ExitFailure;
-use failure::Error;
 use failure::ResultExt;
 use git2::DiffOptions;
 use git2::Repository;
 use milk::find_from_name;
-use milk::highlight_named_oid;
-use milk::print_commit;
-use std::env;
-use std::fs::File;
-use std::fs::OpenOptions;
-use std::io::prelude::*;
-use std::path::Path;
-use std::path::PathBuf;
-use std::process::exit;
-use std::process::Command;
 use structopt::StructOpt;
 
 /// Create a new commit
