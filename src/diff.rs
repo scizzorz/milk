@@ -1,13 +1,13 @@
 use colored::*;
 use exitfailure::ExitFailure;
+use failure::format_err;
+use failure::Error;
 use failure::ResultExt;
 use git2::DiffOptions;
 use git2::Repository;
-use milk::find_from_name;
-use failure::Error;
-use structopt::StructOpt;
 use git2::Tree;
-use failure::format_err;
+use milk::find_from_name;
+use structopt::StructOpt;
 
 /// Create a new commit
 #[derive(StructOpt)]
@@ -68,7 +68,8 @@ fn main() -> Result<(), ExitFailure> {
       let old_tree = name_to_tree(&repo, old).with_context(|_| "couldn't look up old tree")?;
 
       let diff = repo
-        .diff_tree_to_workdir(Some(&old_tree), Some(&mut options)).with_context(|_| "couldn't generate diff")?;
+        .diff_tree_to_workdir(Some(&old_tree), Some(&mut options))
+        .with_context(|_| "couldn't generate diff")?;
       Ok(diff)
     }
 
@@ -77,7 +78,8 @@ fn main() -> Result<(), ExitFailure> {
       let new_tree = name_to_tree(&repo, new).with_context(|_| "couldn't look up new tree")?;
 
       let diff = repo
-        .diff_tree_to_tree(Some(&old_tree), Some(&new_tree), Some(&mut options)).with_context(|_| "couldn't generate diff")?;
+        .diff_tree_to_tree(Some(&old_tree), Some(&new_tree), Some(&mut options))
+        .with_context(|_| "couldn't generate diff")?;
       Ok(diff)
     }
 
@@ -86,14 +88,17 @@ fn main() -> Result<(), ExitFailure> {
       let index = repo.index().with_context(|_| "couldn't read index")?;
 
       let diff = repo
-        .diff_tree_to_index(Some(&old_tree), Some(&index), Some(&mut options)).with_context(|_| "couldn't generate diff")?;
+        .diff_tree_to_index(Some(&old_tree), Some(&index), Some(&mut options))
+        .with_context(|_| "couldn't generate diff")?;
       Ok(diff)
     }
 
     // index..
     (DiffTarget::Index, DiffTarget::WorkingTree) => {
       let index = repo.index().with_context(|_| "couldn't read index")?;
-      let diff = repo.diff_index_to_workdir(Some(&index), Some(&mut options)).with_context(|_| "couldn't generate diff")?;
+      let diff = repo
+        .diff_index_to_workdir(Some(&index), Some(&mut options))
+        .with_context(|_| "couldn't generate diff")?;
 
       Ok(diff)
     }
@@ -104,31 +109,39 @@ fn main() -> Result<(), ExitFailure> {
       options.reverse(true);
 
       let diff = repo
-        .diff_tree_to_index(Some(&new_tree), Some(&index), Some(&mut options)).with_context(|_| "couldn't generate diff")?;
+        .diff_tree_to_index(Some(&new_tree), Some(&index), Some(&mut options))
+        .with_context(|_| "couldn't generate diff")?;
       Ok(diff)
     }
 
-    (DiffTarget::Index, DiffTarget::Index) => Err(format_err!("Cannot diff between identical targets")),
+    (DiffTarget::Index, DiffTarget::Index) => {
+      Err(format_err!("Cannot diff between identical targets"))
+    }
 
     // working..
-    (DiffTarget::WorkingTree, DiffTarget::WorkingTree) => Err(format_err!("Cannot diff between identical targets")),
+    (DiffTarget::WorkingTree, DiffTarget::WorkingTree) => {
+      Err(format_err!("Cannot diff between identical targets"))
+    }
     (DiffTarget::WorkingTree, DiffTarget::Name(new)) => {
       let new_tree = name_to_tree(&repo, new).with_context(|_| "couldn't look up new tree")?;
       options.reverse(true);
 
       let diff = repo
-        .diff_tree_to_workdir(Some(&new_tree), Some(&mut options)).with_context(|_| "couldn't generate diff")?;
+        .diff_tree_to_workdir(Some(&new_tree), Some(&mut options))
+        .with_context(|_| "couldn't generate diff")?;
       Ok(diff)
     }
     (DiffTarget::WorkingTree, DiffTarget::Index) => {
       let index = repo.index().with_context(|_| "couldn't read index")?;
       options.reverse(true);
-      let diff = repo.diff_index_to_workdir(Some(&index), Some(&mut options)).with_context(|_| "couldn't generate diff")?;
+      let diff = repo
+        .diff_index_to_workdir(Some(&index), Some(&mut options))
+        .with_context(|_| "couldn't generate diff")?;
 
       Ok(diff)
     }
-  }.with_context(|_| "failed to diff")?;
-
+  }
+  .with_context(|_| "failed to diff")?;
 
   // this API is literally insane
   // example code yanked from here:
