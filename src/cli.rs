@@ -105,7 +105,7 @@ pub enum Command {
 #[derive(StructOpt, Debug)]
 pub struct Clean {
   /// Paths to clean
-  paths: Vec<String>,
+  pub paths: Vec<String>,
 }
 
 #[derive(StructOpt, Debug)]
@@ -118,11 +118,11 @@ pub struct Diff {
   /// Includes special /INDEX and /WORK options to represent the work tree and
   /// the index, respectively.
   #[structopt(default_value = "/INDEX")]
-  old_tree: String,
+  pub old_tree: String,
 
   /// Milk-style reference label to "new" tree-ish
   #[structopt(default_value = "/WORK")]
-  new_tree: String,
+  pub new_tree: String,
 }
 
 #[derive(StructOpt, Debug)]
@@ -132,10 +132,10 @@ pub struct Head {}
 pub struct Ignore {
   /// Interpret paths as glob patterns and add them to .gitignore unmodified
   #[structopt(long = "pattern", short = "-P")]
-  is_pattern: bool,
+  pub is_pattern: bool,
 
   /// The file or pattern to ignore
-  pattern: String,
+  pub pattern: String,
 }
 
 #[derive(StructOpt, Debug)]
@@ -162,50 +162,50 @@ pub struct Me {}
 #[derive(StructOpt, Debug)]
 pub struct Restore {
   /// Object ID to read contents from
-  object_name: String,
+  pub object_name: String,
 
   /// File path to write object
-  path: std::path::PathBuf,
+  pub path: std::path::PathBuf,
 }
 
 #[derive(StructOpt, Debug)]
 pub struct Show {
   /// Milk-style reference label to object
   #[structopt(default_value = "/HEAD")]
-  name: String,
+  pub name: String,
 }
 
 #[derive(StructOpt, Debug)]
 pub struct Stage {
   /// Paths to stage
-  paths: Vec<String>,
+  pub paths: Vec<String>,
 }
 
 #[derive(StructOpt, Debug)]
 pub struct Status {
   /// Whether untracked files should be hidden or not
   #[structopt(long = "hide-untracked", short = "u")]
-  hide_untracked: bool,
+  pub hide_untracked: bool,
 
   /// Whether ignored files should be shown or not
   #[structopt(long = "show-ignored", short = "i")]
-  show_ignored: bool,
+  pub show_ignored: bool,
 }
 
 #[derive(StructOpt, Debug)]
 pub struct Tag {
   /// Milk-style reference label to tag
   #[structopt(short = "ref", long = "r", default_value = "/HEAD")]
-  ref_name: String,
+  pub ref_name: String,
 
   /// Name of created tag
-  tag_name: String,
+  pub tag_name: String,
 }
 
 #[derive(StructOpt, Debug)]
 pub struct Unstage {
   /// Paths to unstage
-  paths: Vec<String>,
+  pub paths: Vec<String>,
 }
 
 #[derive(StructOpt, Debug)]
