@@ -5,6 +5,7 @@ use super::print_commit;
 use failure::Error;
 use failure::ResultExt;
 use git2::Repository;
+use std::path::Path;
 
 pub fn main(args: cli::Root) -> Result<(), Error> {
   match args.command {
@@ -81,7 +82,21 @@ pub fn show(_globals: &cli::Global, _args: &cli::Show) -> Result<(), Error> {
   Ok(())
 }
 
-pub fn stage(_globals: &cli::Global, _args: &cli::Stage) -> Result<(), Error> {
+pub fn stage(globals: &cli::Global, args: &cli::Stage) -> Result<(), Error> {
+  let repo =
+    Repository::discover(&globals.repo_path).with_context(|_| "couldn't open repository")?;
+
+  let mut index = repo.index().with_context(|_| "couldn't open index")?;
+
+  for path in &args.paths {
+    index
+      .add_path(Path::new(&path))
+      .with_context(|_| "couldn't add path")?;
+    println!("Staged {}", path);
+  }
+
+  index.write().with_context(|_| "couldn't write index")?;
+
   Ok(())
 }
 
