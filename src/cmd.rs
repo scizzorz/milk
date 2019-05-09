@@ -5,6 +5,7 @@ use super::print_commit;
 use failure::Error;
 use failure::ResultExt;
 use git2::Repository;
+use git2::RepositoryInitOptions;
 use std::path::Path;
 
 pub fn main(args: cli::Root) -> Result<(), Error> {
@@ -62,7 +63,18 @@ pub fn ignore(_globals: &cli::Global, _args: &cli::Ignore) -> Result<(), Error> 
   Ok(())
 }
 
-pub fn init(_globals: &cli::Global, _args: &cli::Init) -> Result<(), Error> {
+pub fn init(globals: &cli::Global, args: &cli::Init) -> Result<(), Error> {
+  let mut repo_opts = RepositoryInitOptions::new();
+  repo_opts.bare(args.bare);
+  repo_opts.no_reinit(true);
+
+  let _repo = Repository::init_opts(&globals.repo_path, &repo_opts)
+    .with_context(|_| "couldn't initialize repository")?;
+
+  if !globals.quiet {
+    println!("Initialized repository.");
+  }
+
   Ok(())
 }
 
