@@ -28,15 +28,15 @@ pub fn main(args: cli::Root) -> Result<(), Error> {
   Ok(())
 }
 
-pub fn clean(globals: &cli::Global, args: &cli::Clean) -> Result<(), Error> {
+pub fn clean(_globals: &cli::Global, _args: &cli::Clean) -> Result<(), Error> {
   Ok(())
 }
 
-pub fn commit(globals: &cli::Global, args: &cli::Commit) -> Result<(), Error> {
+pub fn commit(_globals: &cli::Global, _args: &cli::Commit) -> Result<(), Error> {
   Ok(())
 }
 
-pub fn diff(globals: &cli::Global, args: &cli::Diff) -> Result<(), Error> {
+pub fn diff(_globals: &cli::Global, _args: &cli::Diff) -> Result<(), Error> {
   Ok(())
 }
 
@@ -57,46 +57,46 @@ pub fn head(globals: &cli::Global, _args: &cli::Head) -> Result<(), Error> {
   Ok(())
 }
 
-pub fn ignore(globals: &cli::Global, args: &cli::Ignore) -> Result<(), Error> {
+pub fn ignore(_globals: &cli::Global, _args: &cli::Ignore) -> Result<(), Error> {
   Ok(())
 }
 
-pub fn init(globals: &cli::Global, args: &cli::Init) -> Result<(), Error> {
+pub fn init(_globals: &cli::Global, _args: &cli::Init) -> Result<(), Error> {
   Ok(())
 }
 
-pub fn ls(globals: &cli::Global, args: &cli::Ls) -> Result<(), Error> {
+pub fn ls(_globals: &cli::Global, _args: &cli::Ls) -> Result<(), Error> {
   Ok(())
 }
 
-pub fn me(globals: &cli::Global, args: &cli::Me) -> Result<(), Error> {
+pub fn me(_globals: &cli::Global, _args: &cli::Me) -> Result<(), Error> {
   Ok(())
 }
 
-pub fn restore(globals: &cli::Global, args: &cli::Restore) -> Result<(), Error> {
+pub fn restore(_globals: &cli::Global, _args: &cli::Restore) -> Result<(), Error> {
   Ok(())
 }
 
-pub fn show(globals: &cli::Global, args: &cli::Show) -> Result<(), Error> {
+pub fn show(_globals: &cli::Global, _args: &cli::Show) -> Result<(), Error> {
   Ok(())
 }
 
-pub fn stage(globals: &cli::Global, args: &cli::Stage) -> Result<(), Error> {
+pub fn stage(_globals: &cli::Global, _args: &cli::Stage) -> Result<(), Error> {
   Ok(())
 }
 
-pub fn status(globals: &cli::Global, args: &cli::Status) -> Result<(), Error> {
+pub fn status(_globals: &cli::Global, _args: &cli::Status) -> Result<(), Error> {
   Ok(())
 }
 
-pub fn tag(globals: &cli::Global, args: &cli::Tag) -> Result<(), Error> {
+pub fn tag(_globals: &cli::Global, _args: &cli::Tag) -> Result<(), Error> {
   Ok(())
 }
 
-pub fn unstage(globals: &cli::Global, args: &cli::Unstage) -> Result<(), Error> {
+pub fn unstage(_globals: &cli::Global, _args: &cli::Unstage) -> Result<(), Error> {
   Ok(())
 }
 
-pub fn where_(globals: &cli::Global, args: &cli::Where) -> Result<(), Error> {
+pub fn where_(_globals: &cli::Global, _args: &cli::Where) -> Result<(), Error> {
   Ok(())
 }
