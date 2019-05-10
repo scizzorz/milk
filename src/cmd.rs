@@ -529,6 +529,16 @@ pub fn unstage(_globals: cli::Global, _args: cli::Unstage) -> Result<(), Error> 
   Ok(())
 }
 
-pub fn where_(_globals: cli::Global, _args: cli::Where) -> Result<(), Error> {
+pub fn where_(globals: cli::Global, _args: cli::Where) -> Result<(), Error> {
+  let repo = Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
+
+  match repo.workdir() {
+    Some(path) => match path.to_str() {
+      Some(path_str) => println!("{}", path_str),
+      None => println!("Path is not UTF-8"),
+    },
+    None => println!("Repository is bare."),
+  }
+
   Ok(())
 }
