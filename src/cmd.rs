@@ -16,6 +16,7 @@ use git2::Odb;
 use git2::Oid;
 use git2::Repository;
 use git2::RepositoryInitOptions;
+use git2::ResetType;
 use git2::Status;
 use git2::StatusOptions;
 use git2::Tree;
@@ -525,12 +526,31 @@ pub fn tag(_globals: cli::Global, _args: cli::Tag) -> Result<(), Error> {
   Ok(())
 }
 
-pub fn unstage(_globals: cli::Global, _args: cli::Unstage) -> Result<(), Error> {
+pub fn unstage(globals: cli::Global, args: cli::Unstage) -> Result<(), Error> {
+  let repo =
+    Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
+
+  let head = repo.head().with_context(|_| "couldn't locate HEAD")?;
+  let commit = head
+    .peel(ObjectType::Any)
+    .with_context(|_| "couldn't peel to commit HEAD")?;
+
+  if !args.paths.is_empty() {
+    repo
+      .reset_default(Some(&commit), args.paths)
+      .with_context(|_| "could not reset paths")?;
+  } else {
+    repo
+      .reset(&commit, ResetType::Mixed, None)
+      .with_context(|_| "could not reset to HEAD")?;
+  }
+
   Ok(())
 }
 
 pub fn where_(globals: cli::Global, _args: cli::Where) -> Result<(), Error> {
-  let repo = Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
+  let repo =
+    Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
 
   match repo.workdir() {
     Some(path) => match path.to_str() {
