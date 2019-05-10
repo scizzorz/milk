@@ -26,6 +26,11 @@ pub struct Global {
 #[derive(StructOpt, Debug)]
 #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
 pub enum Command {
+  /// Operate on branches
+  #[structopt(name = "branch")]
+  #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+  Branch(Branch),
+
   /// Reset untracked modifications to files
   #[structopt(name = "clean")]
   #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
@@ -101,6 +106,56 @@ pub enum Command {
   #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
   Where(Where),
 }
+
+#[derive(StructOpt, Debug)]
+#[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+pub enum BranchCommand {
+  /// List all branches
+  #[structopt(name = "ls")]
+  #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+  Ls(BranchLs),
+
+  /// Change what a branch points to
+  #[structopt(name = "mv")]
+  #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+  Mv(BranchMv),
+
+  /// Create a new branch
+  #[structopt(name = "new")]
+  #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+  New(BranchMv),
+
+  /// Rename a branch
+  #[structopt(name = "rename")]
+  #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+  Rename(BranchRename),
+
+  /// Remove a branch
+  #[structopt(name = "rm")]
+  #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+  Rm(BranchRm),
+}
+
+#[derive(StructOpt, Debug)]
+pub struct Branch {
+  #[structopt(subcommand)]
+  command: BranchCommand,
+}
+
+#[derive(StructOpt, Debug)]
+pub struct BranchLs {}
+
+#[derive(StructOpt, Debug)]
+pub struct BranchMv {}
+
+#[derive(StructOpt, Debug)]
+pub struct BranchNew {}
+
+#[derive(StructOpt, Debug)]
+pub struct BranchRename {}
+
+#[derive(StructOpt, Debug)]
+pub struct BranchRm {}
 
 #[derive(StructOpt, Debug)]
 pub struct Clean {

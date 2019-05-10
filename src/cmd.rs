@@ -10,6 +10,10 @@ use std::path::Path;
 
 pub fn main(args: cli::Root) -> Result<(), Error> {
   match args.command {
+    Command::Branch(cmd_args) => {
+      println!("branch {:?}", cmd_args);
+      Ok(())
+    }
     Command::Clean(cmd_args) => clean(&args.globals, &cmd_args),
     Command::Commit(cmd_args) => commit(&args.globals, &cmd_args),
     Command::Diff(cmd_args) => diff(&args.globals, &cmd_args),
