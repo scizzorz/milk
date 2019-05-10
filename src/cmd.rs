@@ -478,7 +478,14 @@ pub fn restore(globals: cli::Global, args: cli::Restore) -> Result<(), Error> {
   Ok(())
 }
 
-pub fn show(_globals: cli::Global, _args: cli::Show) -> Result<(), Error> {
+pub fn show(globals: cli::Global, args: cli::Show) -> Result<(), Error> {
+  let repo =
+    Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
+
+  let object = find_from_name(&repo, &args.name).with_context(|_| "couldn't look up object")?;
+
+  print_object(&repo, &object);
+
   Ok(())
 }
 
