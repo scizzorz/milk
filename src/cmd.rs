@@ -1,24 +1,25 @@
-use failure::Error;
+use super::cli;
+use super::cli::BranchCommand;
+use super::cli::Command;
+use super::find_from_name;
+use super::highlight_named_oid;
+use super::print_commit;
 use colored::*;
+use failure::Error;
 use failure::ResultExt;
+use git2::build::CheckoutBuilder;
 use git2::ObjectType;
 use git2::Odb;
 use git2::Oid;
 use git2::Repository;
 use git2::RepositoryInitOptions;
 use git2::StatusOptions;
-use git2::build::CheckoutBuilder;
 use std::fs::File;
 use std::fs::OpenOptions;
-use std::io::Read;
-use std::io::prelude::*;
 use std::io;
+use std::io::prelude::*;
+use std::io::Read;
 use std::path::Path;
-use super::cli::BranchCommand;
-use super::cli::Command;
-use super::cli;
-use super::highlight_named_oid;
-use super::print_commit;
 
 // used by ignore
 fn handle_file(
@@ -112,7 +113,8 @@ pub fn main(args: cli::Root) -> Result<(), Error> {
 }
 
 pub fn clean(globals: cli::Global, args: cli::Clean) -> Result<(), Error> {
-  let repo = Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
+  let repo =
+    Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
   let odb = repo.odb().with_context(|_| "couldn't open odb")?;
 
   let mut checkout = CheckoutBuilder::new();
@@ -233,7 +235,8 @@ pub fn ls(_globals: cli::Global, _args: cli::Ls) -> Result<(), Error> {
 }
 
 pub fn me(globals: cli::Global, _args: cli::Me) -> Result<(), Error> {
-  let repo = Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
+  let repo =
+    Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
 
   // I don't know why this has to be this way
   // if you don't do the snapshot(), it crashes when reading a string
@@ -258,7 +261,32 @@ pub fn me(globals: cli::Global, _args: cli::Me) -> Result<(), Error> {
   Ok(())
 }
 
-pub fn restore(_globals: cli::Global, _args: cli::Restore) -> Result<(), Error> {
+pub fn restore(globals: cli::Global, args: cli::Restore) -> Result<(), Error> {
+  let repo =
+    Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
+  let object =
+    find_from_name(&repo, &args.object_name).with_context(|_| "couldn't look up object")?;
+
+  let blob = match object.into_blob() {
+    Ok(blob) => blob,
+    Err(_) => {
+      return Err(failure::err_msg("name didn't point to blob")).context("...?")?;
+    }
+  };
+
+  let bytes = blob.content();
+
+  let mut file = OpenOptions::new()
+    .write(true)
+    .truncate(true)
+    .create(true)
+    .open(args.path)
+    .with_context(|_| "couldn't open file for writing")?;
+
+  file
+    .write_all(bytes)
+    .with_context(|_| "couldn't write to file")?;
+
   Ok(())
 }
 
