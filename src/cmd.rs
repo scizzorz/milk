@@ -4,6 +4,7 @@ use super::cli::Command;
 use super::find_from_name;
 use super::highlight_named_oid;
 use super::print_commit;
+use super::print_object;
 use colored::*;
 use failure::format_err;
 use failure::Error;
@@ -522,7 +523,17 @@ pub fn status(globals: cli::Global, args: cli::Status) -> Result<(), Error> {
   Ok(())
 }
 
-pub fn tag(_globals: cli::Global, _args: cli::Tag) -> Result<(), Error> {
+pub fn tag(globals: cli::Global, args: cli::Tag) -> Result<(), Error> {
+  let repo =
+    Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
+
+  let object = find_from_name(&repo, &args.ref_name).with_context(|_| "couldn't look up object")?;
+  print_object(&repo, &object);
+
+  repo
+    .tag_lightweight(&args.tag_name, &object, false)
+    .with_context(|_| "couldn't create tag")?;
+
   Ok(())
 }
 
