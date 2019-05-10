@@ -1,16 +1,23 @@
-use std::io::prelude::*;
-use super::cli;
-use std::fs::OpenOptions;
-use super::cli::Command;
-use super::cli::BranchCommand;
-use super::highlight_named_oid;
-use super::print_commit;
 use failure::Error;
-use std::io;
 use failure::ResultExt;
+use git2::ObjectType;
+use git2::Odb;
+use git2::Oid;
 use git2::Repository;
 use git2::RepositoryInitOptions;
+use git2::StatusOptions;
+use git2::build::CheckoutBuilder;
+use std::fs::File;
+use std::fs::OpenOptions;
+use std::io::Read;
+use std::io::prelude::*;
+use std::io;
 use std::path::Path;
+use super::cli::BranchCommand;
+use super::cli::Command;
+use super::cli;
+use super::highlight_named_oid;
+use super::print_commit;
 
 // used by ignore
 fn handle_file(
@@ -61,6 +68,15 @@ fn handle_file(
   Ok(Some(String::from(final_filepath)))
 }
 
+// used by clean
+fn write_blob(odb: &Odb, path: &str) -> Result<Oid, Error> {
+  let mut handle = File::open(path)?;
+  let mut bytes = Vec::new();
+  let _size = handle.read_to_end(&mut bytes)?;
+  let oid = odb.write(ObjectType::Blob, &bytes)?;
+  Ok(oid)
+}
+
 pub fn main(args: cli::Root) -> Result<(), Error> {
   match args.command {
     Command::Branch(cmd_args) => {
@@ -94,7 +110,46 @@ pub fn main(args: cli::Root) -> Result<(), Error> {
   Ok(())
 }
 
-pub fn clean(_globals: cli::Global, _args: cli::Clean) -> Result<(), Error> {
+pub fn clean(globals: cli::Global, args: cli::Clean) -> Result<(), Error> {
+  let repo = Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
+  let odb = repo.odb().with_context(|_| "couldn't open odb")?;
+
+  let mut checkout = CheckoutBuilder::new();
+  checkout.force();
+
+  for path in &args.paths {
+    checkout.path(path);
+  }
+
+  if !args.paths.is_empty() {
+    for path in &args.paths {
+      let oid = write_blob(&odb, path)?;
+      println!("{}", highlight_named_oid(&repo, path, oid));
+    }
+  } else {
+    let mut status_opts = StatusOptions::new();
+    status_opts.include_untracked(false);
+    status_opts.include_ignored(false);
+
+    let statuses = repo
+      .statuses(Some(&mut status_opts))
+      .with_context(|_| "couldn't open status")?;
+
+    for entry in statuses.iter() {
+      if let Some(path) = entry.path() {
+        let status = entry.status();
+        if status.is_wt_modified() || status.is_index_modified() {
+          let oid = write_blob(&odb, path)?;
+          println!("{}", highlight_named_oid(&repo, path, oid));
+        }
+      }
+    }
+  }
+
+  repo
+    .checkout_head(Some(&mut checkout))
+    .with_context(|_| "couldn't checkout")?;
+
   Ok(())
 }
 
