@@ -1,5 +1,6 @@
 use super::cli;
 use super::cli::Command;
+use super::cli::BranchCommand;
 use super::highlight_named_oid;
 use super::print_commit;
 use failure::Error;
@@ -12,6 +13,13 @@ pub fn main(args: cli::Root) -> Result<(), Error> {
   match args.command {
     Command::Branch(cmd_args) => {
       println!("branch {:?}", cmd_args);
+      match cmd_args.command {
+        BranchCommand::Ls(_subcmd_args) => (),
+        BranchCommand::Mv(_subcmd_args) => (),
+        BranchCommand::New(_subcmd_args) => (),
+        BranchCommand::Rename(_subcmd_args) => (),
+        BranchCommand::Rm(_subcmd_args) => (),
+      }
       Ok(())
     }
     Command::Clean(cmd_args) => clean(&args.globals, &cmd_args),

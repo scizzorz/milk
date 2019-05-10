@@ -139,7 +139,7 @@ pub enum BranchCommand {
 #[derive(StructOpt, Debug)]
 pub struct Branch {
   #[structopt(subcommand)]
-  command: BranchCommand,
+  pub command: BranchCommand,
 }
 
 #[derive(StructOpt, Debug)]
