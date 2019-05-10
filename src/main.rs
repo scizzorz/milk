@@ -7,9 +7,6 @@ use structopt::StructOpt;
 fn main() -> Result<(), ExitFailure> {
   let args = cli::Root::from_args();
   env_logger::init();
-
-  println!("{:?}", args);
   cmd::main(args).with_context(|_| "couldn't execute command")?;
-
   Ok(())
 }
