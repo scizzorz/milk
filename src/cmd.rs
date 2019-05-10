@@ -1,4 +1,5 @@
 use failure::Error;
+use colored::*;
 use failure::ResultExt;
 use git2::ObjectType;
 use git2::Odb;
@@ -231,7 +232,29 @@ pub fn ls(_globals: cli::Global, _args: cli::Ls) -> Result<(), Error> {
   Ok(())
 }
 
-pub fn me(_globals: cli::Global, _args: cli::Me) -> Result<(), Error> {
+pub fn me(globals: cli::Global, _args: cli::Me) -> Result<(), Error> {
+  let repo = Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
+
+  // I don't know why this has to be this way
+  // if you don't do the snapshot(), it crashes when reading a string
+  // with an obscure error that's hard to Google:
+  // "get_string called on a live config object; class=Config (7)"
+  let mut config = repo.config().with_context(|_| "couldn't open config")?;
+  let config = config
+    .snapshot()
+    .with_context(|_| "couldn't snapshot config")?;
+
+  // read user name and email
+  let user_name = config
+    .get_str("user.name")
+    .with_context(|_| "couldn't read user.name")?;
+  let user_email = config
+    .get_str("user.email")
+    .with_context(|_| "couldn't read user.email")?;
+
+  // print info
+  println!("{} {}", user_name.cyan(), user_email.bright_black(),);
+
   Ok(())
 }
 
