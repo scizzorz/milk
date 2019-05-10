@@ -2,10 +2,13 @@ use super::cli;
 use super::cli::BranchCommand;
 use super::cli::Command;
 use super::find_from_name;
+use super::get_short_id;
 use super::highlight_named_oid;
 use super::print_commit;
 use super::print_object;
+use super::print_tree;
 use colored::*;
+use exitcode;
 use failure::format_err;
 use failure::Error;
 use failure::ResultExt;
@@ -27,6 +30,18 @@ use std::io;
 use std::io::prelude::*;
 use std::io::Read;
 use std::path::Path;
+use std::process::exit;
+
+// used by ls
+fn find_subtree(tree: &Tree, name: &str) -> Option<Oid> {
+  for entry in tree.iter() {
+    let raw_name = entry.name().unwrap_or("[???]");
+    if raw_name == name {
+      return Some(entry.id());
+    }
+  }
+  None
+}
 
 // used by ignore
 fn handle_file(
@@ -418,7 +433,60 @@ pub fn init(globals: cli::Global, args: cli::Init) -> Result<(), Error> {
   Ok(())
 }
 
-pub fn ls(_globals: cli::Global, _args: cli::Ls) -> Result<(), Error> {
+pub fn ls(globals: cli::Global, args: cli::Ls) -> Result<(), Error> {
+  let repo =
+    Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
+
+  let object = find_from_name(&repo, &args.ref_name).with_context(|_| "couldn't find refname")?;
+
+  let commit = match object.into_commit() {
+    Ok(commit) => commit,
+    Err(_) => {
+      return Err(failure::err_msg("refname didn't point to commit")).context("...?")?;
+    }
+  };
+
+  println!(
+    "{}",
+    highlight_named_oid(&repo, &args.ref_name, commit.id())
+  );
+
+  if args.tree_path.is_absolute() {
+    eprintln!("Tree path must be relative");
+    exit(exitcode::USAGE);
+  }
+
+  let mut tree = commit.tree().with_context(|_| "couldn't find tree")?;
+
+  for frag in args.tree_path.iter() {
+    let frag_name = match frag.to_str() {
+      Some(x) => x,
+      None => {
+        eprintln!("Tree path must be valid UTF-8");
+        exit(exitcode::USAGE);
+      }
+    };
+
+    match find_subtree(&tree, &frag_name) {
+      Some(next_tree_id) => {
+        println!(
+          "{}/ {}",
+          frag_name.cyan(),
+          get_short_id(&repo, next_tree_id).bright_black()
+        );
+        tree = repo
+          .find_tree(next_tree_id)
+          .with_context(|_| "couldn't find tree")?;
+      }
+      None => {
+        eprintln!("Subtree `{}` did not exist", frag_name);
+        exit(exitcode::USAGE);
+      }
+    };
+  }
+
+  print_tree(&repo, &tree);
+
   Ok(())
 }
 
