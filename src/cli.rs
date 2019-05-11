@@ -143,7 +143,11 @@ pub struct Branch {
 }
 
 #[derive(StructOpt, Debug)]
-pub struct BranchLs {}
+pub struct BranchLs {
+  /// Include remote branches in the list
+  #[structopt(long = "remote", short = "r")]
+  pub include_remote: bool,
+}
 
 #[derive(StructOpt, Debug)]
 pub struct BranchMv {}

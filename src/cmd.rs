@@ -13,6 +13,7 @@ use failure::format_err;
 use failure::Error;
 use failure::ResultExt;
 use git2::build::CheckoutBuilder;
+use git2::BranchType;
 use git2::Diff;
 use git2::DiffOptions;
 use git2::ObjectType;
@@ -306,17 +307,13 @@ fn get_status_string(status: Status) -> String {
 
 pub fn main(args: cli::Root) -> Result<(), Error> {
   match args.command {
-    Command::Branch(cmd_args) => {
-      println!("branch {:?}", cmd_args);
-      match cmd_args.command {
-        BranchCommand::Ls(_subcmd_args) => (),
-        BranchCommand::Mv(_subcmd_args) => (),
-        BranchCommand::New(_subcmd_args) => (),
-        BranchCommand::Rename(_subcmd_args) => (),
-        BranchCommand::Rm(_subcmd_args) => (),
-      }
-      Ok(())
-    }
+    Command::Branch(cmd_args) => match cmd_args.command {
+      BranchCommand::Ls(subcmd_args) => branch_ls(args.globals, subcmd_args),
+      BranchCommand::Mv(_subcmd_args) => Ok(()),
+      BranchCommand::New(_subcmd_args) => Ok(()),
+      BranchCommand::Rename(_subcmd_args) => Ok(()),
+      BranchCommand::Rm(_subcmd_args) => Ok(()),
+    },
     Command::Clean(cmd_args) => clean(args.globals, cmd_args),
     Command::Commit(cmd_args) => commit(args.globals, cmd_args),
     Command::Diff(cmd_args) => diff(args.globals, cmd_args),
@@ -333,6 +330,30 @@ pub fn main(args: cli::Root) -> Result<(), Error> {
     Command::Unstage(cmd_args) => unstage(args.globals, cmd_args),
     Command::Where(cmd_args) => where_(args.globals, cmd_args),
   }?;
+
+  Ok(())
+}
+
+pub fn branch_ls(globals: cli::Global, args: cli::BranchLs) -> Result<(), Error> {
+  let repo =
+    Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
+
+  let branches = repo
+    .branches(None)
+    .with_context(|_| "couldn't iterate branches")?;
+
+  for branch in branches {
+    let (branch, typ) = branch.with_context(|_| "couldn't identify branch")?;
+    let name = branch
+      .name()
+      .with_context(|_| "couldn't identify branch name")?
+      .unwrap_or("[branch name is invalid utf8]");
+    let head_prefix = if branch.is_head() { "*" } else { " " };
+    match (typ, args.include_remote) {
+      (BranchType::Remote, false) => (),
+      _ => println!("{} {}", head_prefix, name),
+    }
+  }
 
   Ok(())
 }
