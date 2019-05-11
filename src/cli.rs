@@ -152,47 +152,47 @@ pub struct BranchLs {
 #[derive(StructOpt, Debug)]
 pub struct BranchMv {
   /// Branch to be moved
-  src_name: String,
+  pub src_name: String,
 
   /// Milk-style label of the destination reference
-  dest_ref: String,
+  pub dest_ref: String,
 }
 
 #[derive(StructOpt, Debug)]
 pub struct BranchNew {
   /// Milk-style label of the destination reference
   #[structopt(long = "ref", short = "r", default_value = "/HEAD")]
-  ref_name: String,
+  pub ref_name: String,
 
   /// Name of the new branch
-  name: String,
+  pub name: String,
 }
 
 #[derive(StructOpt, Debug)]
 pub struct BranchRename {
   /// Whether the branch is remote or not
   #[structopt(long = "remote", short = "r")]
-  is_remote: bool,
+  pub is_remote: bool,
 
   /// Whether an existing branch with the destination name should be overridden
   #[structopt(long = "force", short = "f")]
-  force: bool,
+  pub force: bool,
 
   /// Branch to be renamed
-  src_name: String,
+  pub src_name: String,
 
   /// New name of the branch
-  dest_name: String,
+  pub dest_name: String,
 }
 
 #[derive(StructOpt, Debug)]
 pub struct BranchRm {
   /// Whether the branch is remote
   #[structopt(long = "remote", short = "r")]
-  is_remote: bool,
+  pub is_remote: bool,
 
   /// Branch to be removed
-  name: String,
+  pub name: String,
 }
 
 #[derive(StructOpt, Debug)]
