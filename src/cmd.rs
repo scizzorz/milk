@@ -309,7 +309,7 @@ pub fn main(args: cli::Root) -> Result<(), Error> {
   match args.command {
     Command::Branch(cmd_args) => match cmd_args.command {
       BranchCommand::Ls(subcmd_args) => branch_ls(args.globals, subcmd_args),
-      BranchCommand::Mv(_subcmd_args) => Ok(()),
+      BranchCommand::Mv(subcmd_args) => branch_mv(args.globals, subcmd_args),
       BranchCommand::New(_subcmd_args) => Ok(()),
       BranchCommand::Rename(_subcmd_args) => Ok(()),
       BranchCommand::Rm(_subcmd_args) => Ok(()),
@@ -357,6 +357,37 @@ pub fn branch_ls(globals: cli::Global, args: cli::BranchLs) -> Result<(), Error>
 
   Ok(())
 }
+
+pub fn branch_mv(globals: cli::Global, args: cli::BranchMv) -> Result<(), Error> {
+  let repo = Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
+
+  let _src_branch = repo
+    .find_branch(&args.src_name, BranchType::Local)
+    .with_context(|_| "couldn't find source branch")?;
+
+  let dest_object =
+    find_from_name(&repo, &args.dest_ref).with_context(|_| "couldn't look up dest ref")?;
+
+  if let Some(ObjectType::Commit) = dest_object.kind() {
+    let commit = dest_object.into_commit().unwrap();
+
+    repo
+      .branch(&args.src_name, &commit, true)
+      .with_context(|_| "couldn't move branch")?;
+
+    println!("Moved branch");
+    println!(
+      "{}",
+      highlight_named_oid(&repo, &args.src_name, commit.id())
+    );
+    print_commit(&repo, &commit);
+  } else {
+    Err(failure::err_msg("dest object was not a commit"))?;
+  }
+
+  Ok(())
+}
+
 
 pub fn clean(globals: cli::Global, args: cli::Clean) -> Result<(), Error> {
   let repo =
