@@ -310,9 +310,9 @@ pub fn main(args: cli::Root) -> Result<(), Error> {
     Command::Branch(cmd_args) => match cmd_args.command {
       BranchCommand::Ls(subcmd_args) => branch_ls(args.globals, subcmd_args),
       BranchCommand::Mv(subcmd_args) => branch_mv(args.globals, subcmd_args),
-      BranchCommand::New(_subcmd_args) => Ok(()),
-      BranchCommand::Rename(_subcmd_args) => Ok(()),
-      BranchCommand::Rm(_subcmd_args) => Ok(()),
+      BranchCommand::New(subcmd_args) => branch_new(args.globals, subcmd_args),
+      BranchCommand::Rename(subcmd_args) => branch_rename(args.globals, subcmd_args),
+      BranchCommand::Rm(subcmd_args) => branch_rm(args.globals, subcmd_args),
     },
     Command::Clean(cmd_args) => clean(args.globals, cmd_args),
     Command::Commit(cmd_args) => commit(args.globals, cmd_args),
@@ -388,6 +388,17 @@ pub fn branch_mv(globals: cli::Global, args: cli::BranchMv) -> Result<(), Error>
   Ok(())
 }
 
+pub fn branch_new(globals: cli::Global, args: cli::BranchNew) -> Result<(), Error> {
+  Ok(())
+}
+
+pub fn branch_rename(globals: cli::Global, args: cli::BranchRename) -> Result<(), Error> {
+  Ok(())
+}
+
+pub fn branch_rm(globals: cli::Global, args: cli::BranchRm) -> Result<(), Error> {
+  Ok(())
+}
 
 pub fn clean(globals: cli::Global, args: cli::Clean) -> Result<(), Error> {
   let repo =
