@@ -123,7 +123,7 @@ pub enum BranchCommand {
   /// Create a new branch
   #[structopt(name = "new")]
   #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
-  New(BranchMv),
+  New(BranchNew),
 
   /// Rename a branch
   #[structopt(name = "rename")]
@@ -150,16 +150,50 @@ pub struct BranchLs {
 }
 
 #[derive(StructOpt, Debug)]
-pub struct BranchMv {}
+pub struct BranchMv {
+  /// Branch to be moved
+  src_name: String,
+
+  /// Milk-style label of the destination reference
+  dest_ref: String,
+}
 
 #[derive(StructOpt, Debug)]
-pub struct BranchNew {}
+pub struct BranchNew {
+  /// Milk-style label of the destination reference
+  #[structopt(long = "ref", short = "r", default_value = "/HEAD")]
+  ref_name: String,
+
+  /// Name of the new branch
+  name: String,
+}
 
 #[derive(StructOpt, Debug)]
-pub struct BranchRename {}
+pub struct BranchRename {
+  /// Whether the branch is remote or not
+  #[structopt(long = "remote", short = "r")]
+  is_remote: bool,
+
+  /// Whether an existing branch with the destination name should be overridden
+  #[structopt(long = "force", short = "f")]
+  force: bool,
+
+  /// Branch to be renamed
+  src_name: String,
+
+  /// New name of the branch
+  dest_name: String,
+}
 
 #[derive(StructOpt, Debug)]
-pub struct BranchRm {}
+pub struct BranchRm {
+  /// Whether the branch is remote
+  #[structopt(long = "remote", short = "r")]
+  is_remote: bool,
+
+  /// Branch to be removed
+  name: String,
+}
 
 #[derive(StructOpt, Debug)]
 pub struct Clean {
