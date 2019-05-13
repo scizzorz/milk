@@ -444,6 +444,32 @@ pub fn branch_rename(globals: cli::Global, args: cli::BranchRename) -> Result<()
 }
 
 pub fn branch_rm(globals: cli::Global, args: cli::BranchRm) -> Result<(), Error> {
+  let repo = Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
+
+  let typ = if args.is_remote {
+    BranchType::Remote
+  } else {
+    BranchType::Local
+  };
+
+  let mut branch = repo
+    .find_branch(&args.name, typ)
+    .with_context(|_| "couldn't find branch")?;
+
+  branch.delete().with_context(|_| "couldn't delete branch")?;
+
+  let target = branch
+    .get()
+    .target()
+    .ok_or_else(|| failure::err_msg("couldn't get removed branch target"))?;
+  let commit = repo
+    .find_commit(target)
+    .with_context(|_| "couldn't find commit")?;
+
+  println!("Removed branch");
+  println!("{}", highlight_named_oid(&repo, &args.name, target));
+  print_commit(&repo, &commit);
+
   Ok(())
 }
 
