@@ -389,6 +389,24 @@ pub fn branch_mv(globals: cli::Global, args: cli::BranchMv) -> Result<(), Error>
 }
 
 pub fn branch_new(globals: cli::Global, args: cli::BranchNew) -> Result<(), Error> {
+  let repo = Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
+  let object = find_from_name(&repo, &args.ref_name).with_context(|_| "couldn't look up ref")?;
+
+  if let Some(ObjectType::Commit) = object.kind() {
+    let commit = object.into_commit().unwrap();
+
+    repo
+      .branch(&args.name, &commit, false)
+      .with_context(|_| "couldn't create branch")?;
+
+    println!("Created branch");
+    println!("{}", highlight_named_oid(&repo, &args.name, commit.id()));
+
+    print_commit(&repo, &commit);
+  } else {
+    Err(failure::err_msg("object was not a commit"))?;
+  }
+
   Ok(())
 }
 
