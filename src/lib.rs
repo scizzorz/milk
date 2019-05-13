@@ -1,12 +1,7 @@
 use chrono::offset::FixedOffset;
 use chrono::offset::TimeZone;
 use chrono::DateTime;
-use clap::crate_version;
-use clap::App;
-use clap::AppSettings;
 use colored::*;
-use exitfailure::ExitFailure;
-use failure::ResultExt;
 use git2::Blob;
 use git2::Commit;
 use git2::Error;
@@ -19,8 +14,9 @@ use git2::Time;
 use git2::Tree;
 use std::io;
 use std::io::Write;
-use std::process::exit;
-use std::process::Command;
+
+pub mod cli;
+pub mod cmd;
 
 pub fn print_commit(repo: &Repository, commit: &Commit) {
   let author = commit.author();
@@ -145,37 +141,6 @@ pub fn print_object(repo: &Repository, object: &Object) {
 
 pub fn highlight_named_oid(repo: &Repository, name: &str, oid: Oid) -> String {
   format!("{} {}", name.cyan(), get_short_id(repo, oid).bright_black())
-}
-
-pub fn run_supercommand(prefix: &str) -> Result<(), ExitFailure> {
-  let args = App::new(prefix)
-    .version(crate_version!())
-    .setting(AppSettings::AllowExternalSubcommands)
-    .setting(AppSettings::ColoredHelp)
-    .get_matches();
-
-  if let (subcommand, Some(cmd)) = args.subcommand() {
-    let command = format!("{}-{}", prefix, subcommand);
-
-    let subcommand_args: Vec<&str> = match cmd.values_of("") {
-      Some(values) => values.collect(),
-      None => Vec::new(),
-    };
-
-    let exit_status = Command::new(&command)
-      .args(&subcommand_args[..])
-      .spawn()
-      .and_then(|mut handle| handle.wait())
-      .with_context(|_| format!("couldn't execute command: `{}`", command))?;
-
-    if !exit_status.success() {
-      // FIXME this should probably return an Err(...)?
-      eprintln!("{} exited with non-zero exit code", command);
-      exit(exit_status.code().unwrap_or(exitcode::SOFTWARE));
-    }
-  }
-
-  Ok(())
 }
 
 pub fn get_short_id(repo: &Repository, oid: Oid) -> String {
