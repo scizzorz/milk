@@ -62,7 +62,7 @@ functionality. It does not mean it's completely finished.
   `show` defaulting to `HEAD`.
 * [x] `where` - Show the base directory for the working repo
 * [x] `status` - Obvious
-* [ ] `diff` - Obvious
+* [x] `diff` - Obvious
 * [ ] `log` - Obvious
 
 #### File operations
@@ -87,7 +87,11 @@ functionality. It does not mean it's completely finished.
 * [ ] `switch` - Switch HEAD to something else
 * [ ] `update` - Try to pull new changes from a remote, including
   fastforwarding local branches and stuff
-* [ ] `commit` - Obvious
+* [x] `commit` - Obvious
+* [ ] `merge` - Obvious, but with a change: when merging two branches, *both*
+  branches will update to the merge commit. I find too often that I `checkout
+  master; merge dev; checkout dev; merge master` to get a clean branching point
+  for `dev`.
 
 #### Branch operations
 
