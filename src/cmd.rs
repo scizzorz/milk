@@ -359,7 +359,8 @@ pub fn branch_ls(globals: cli::Global, args: cli::BranchLs) -> Result<(), Error>
 }
 
 pub fn branch_mv(globals: cli::Global, args: cli::BranchMv) -> Result<(), Error> {
-  let repo = Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
+  let repo =
+    Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
 
   let _src_branch = repo
     .find_branch(&args.src_name, BranchType::Local)
@@ -389,7 +390,8 @@ pub fn branch_mv(globals: cli::Global, args: cli::BranchMv) -> Result<(), Error>
 }
 
 pub fn branch_new(globals: cli::Global, args: cli::BranchNew) -> Result<(), Error> {
-  let repo = Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
+  let repo =
+    Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
   let object = find_from_name(&repo, &args.ref_name).with_context(|_| "couldn't look up ref")?;
 
   if let Some(ObjectType::Commit) = object.kind() {
@@ -411,7 +413,8 @@ pub fn branch_new(globals: cli::Global, args: cli::BranchNew) -> Result<(), Erro
 }
 
 pub fn branch_rename(globals: cli::Global, args: cli::BranchRename) -> Result<(), Error> {
-  let repo = Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
+  let repo =
+    Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
 
   let typ = if args.is_remote {
     BranchType::Remote
@@ -444,7 +447,8 @@ pub fn branch_rename(globals: cli::Global, args: cli::BranchRename) -> Result<()
 }
 
 pub fn branch_rm(globals: cli::Global, args: cli::BranchRm) -> Result<(), Error> {
-  let repo = Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
+  let repo =
+    Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
 
   let typ = if args.is_remote {
     BranchType::Remote
