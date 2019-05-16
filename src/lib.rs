@@ -2,9 +2,10 @@ use chrono::offset::FixedOffset;
 use chrono::offset::TimeZone;
 use chrono::DateTime;
 use colored::*;
+use failure::Error;
+use failure::ResultExt;
 use git2::Blob;
 use git2::Commit;
-use git2::Error;
 use git2::Object;
 use git2::ObjectType;
 use git2::Oid;
@@ -12,8 +13,14 @@ use git2::Repository;
 use git2::Tag;
 use git2::Time;
 use git2::Tree;
+use std::env;
+use std::fs::File;
+use std::fs::OpenOptions;
 use std::io;
+use std::io::prelude::*;
 use std::io::Write;
+use std::path::Path;
+use std::process;
 
 pub mod cli;
 pub mod cmd;
@@ -170,7 +177,10 @@ impl MilkRepo for Repository {
 
   fn find_from_refname<'repo>(&'repo self, name: &str) -> Result<Object<'repo>, Error> {
     let oid = self.refname_to_id(name)?;
-    self.find_object(oid, Some(ObjectType::Any))
+    let ok = self
+      .find_object(oid, Some(ObjectType::Any))
+      .with_context(|_| "couldn't find object with that oid")?;
+    Ok(ok)
   }
 
   fn find_from_name<'repo>(&'repo self, name: &str) -> Result<Object<'repo>, Error> {
@@ -194,7 +204,8 @@ impl MilkRepo for Repository {
       let odb = self.odb()?;
       let short_oid = Oid::from_str(name)?;
       let oid = odb.exists_prefix(short_oid, name.len())?;
-      self.find_object(oid, Some(ObjectType::Any))
+      let ok = self.find_object(oid, Some(ObjectType::Any))?;
+      Ok(ok)
     }
   }
 }
@@ -204,4 +215,46 @@ pub fn git_to_chrono(sig: &Time) -> DateTime<FixedOffset> {
   let offset_sec = sig.offset_minutes() * 60;
   let fixed_offset = FixedOffset::east(offset_sec);
   fixed_offset.timestamp(timestamp, 0)
+}
+
+pub fn editor(path: &Path, contents: &str) -> Result<String, Error> {
+  // FIXME one of the Err cases here is for a non-unicode value... I'd assume you
+  // can run a non-unicode command, no?
+  let editor = env::var("EDITOR").with_context(|_| "$EDITOR is not defined.")?;
+
+  let mut file = OpenOptions::new()
+    .write(true)
+    .truncate(true)
+    .create(true)
+    .open(path)
+    .with_context(|_| "couldn't open $EDITOR file")?;
+
+  file
+    .write_all(contents.as_bytes())
+    .with_context(|_| "couldn't write $EDITOR file contents")?;
+
+  file
+    .sync_all()
+    .with_context(|_| "couldn't sync $EDITOR file contents")?;
+
+  let mut editor_command = process::Command::new(editor);
+  editor_command.arg(&path);
+
+  editor_command
+    .spawn()
+    .and_then(|mut handle| handle.wait())
+    .with_context(|_| "$EDITOR failed for some reason")?;
+
+  let mut file = File::open(path).with_context(|_| "couldn't re-open file")?;
+
+  let mut contents = String::new();
+  file
+    .read_to_string(&mut contents)
+    .with_context(|_| "couldn't read from file")?;
+
+  if std::fs::remove_file(&path).is_err() {
+    eprintln!("WARNING: Unable to delete {} after use", path.display());
+  }
+
+  Ok(contents)
 }
