@@ -35,6 +35,7 @@ pub trait MilkRepo {
   fn get_short_id(&self, oid: Oid) -> String;
   fn find_from_refname<'repo>(&'repo self, name: &str) -> Result<Object<'repo>, Error>;
   fn find_from_name<'repo>(&'repo self, name: &str) -> Result<Object<'repo>, Error>;
+  fn write_blob(&self, path: &Path) -> Result<Oid, Error>;
 }
 
 impl MilkRepo for Repository {
@@ -207,6 +208,15 @@ impl MilkRepo for Repository {
       let ok = self.find_object(oid, Some(ObjectType::Any))?;
       Ok(ok)
     }
+  }
+
+  fn write_blob(&self, path: &Path) -> Result<Oid, Error> {
+    let odb = self.odb().with_context(|_| "couldn't open ODB")?;
+    let mut handle = File::open(path)?;
+    let mut bytes = Vec::new();
+    let _size = handle.read_to_end(&mut bytes)?;
+    let oid = odb.write(ObjectType::Blob, &bytes)?;
+    Ok(oid)
   }
 }
 

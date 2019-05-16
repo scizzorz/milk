@@ -13,7 +13,6 @@ use git2::BranchType;
 use git2::Diff;
 use git2::DiffOptions;
 use git2::ObjectType;
-use git2::Odb;
 use git2::Oid;
 use git2::Repository;
 use git2::RepositoryInitOptions;
@@ -21,11 +20,9 @@ use git2::ResetType;
 use git2::Status;
 use git2::StatusOptions;
 use git2::Tree;
-use std::fs::File;
 use std::fs::OpenOptions;
 use std::io;
 use std::io::prelude::*;
-use std::io::Read;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::exit;
@@ -90,15 +87,6 @@ fn handle_file(
   Ok(Some(String::from(final_filepath)))
 }
 
-// used by clean
-fn write_blob(odb: &Odb, path: &str) -> Result<Oid, Error> {
-  let mut handle = File::open(path)?;
-  let mut bytes = Vec::new();
-  let _size = handle.read_to_end(&mut bytes)?;
-  let oid = odb.write(ObjectType::Blob, &bytes)?;
-  Ok(oid)
-}
-
 // used by diff
 enum DiffTarget<'a> {
   WorkingTree,
@@ -119,10 +107,9 @@ impl<'a> DiffTarget<'a> {
 
 // used by diff
 fn name_to_tree<'repo>(repo: &'repo Repository, s: &str) -> Result<Tree<'repo>, Error> {
-  let object = repo
+  let tree = repo
     .find_from_name(s)
-    .with_context(|_| "couldn't find refname")?;
-  let tree = object
+    .with_context(|_| "couldn't find refname")?
     .peel_to_tree()
     .with_context(|_| "couldn't peel to commit HEAD")?;
   Ok(tree)
@@ -444,7 +431,7 @@ pub fn clean(globals: cli::Global, args: cli::Clean) -> Result<(), Error> {
 
   if !args.paths.is_empty() {
     for path in &args.paths {
-      let oid = write_blob(&odb, path)?;
+      let oid = repo.write_blob(Path::new(path))?;
       println!("{}", repo.highlight_named_oid(path, oid));
     }
   } else {
@@ -460,7 +447,7 @@ pub fn clean(globals: cli::Global, args: cli::Clean) -> Result<(), Error> {
       if let Some(path) = entry.path() {
         let status = entry.status();
         if status.is_wt_modified() || status.is_index_modified() {
-          let oid = write_blob(&odb, path)?;
+          let oid = repo.write_blob(Path::new(path))?;
           println!("{}", repo.highlight_named_oid(path, oid));
         }
       }
