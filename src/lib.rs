@@ -18,87 +18,29 @@ use std::io::Write;
 pub mod cli;
 pub mod cmd;
 
-pub fn print_commit(repo: &Repository, commit: &Commit) {
-  let author = commit.author();
-  let author_name = author.name().unwrap_or("[???]");
-  let author_email = author.email().unwrap_or("[???]");
-  let author_time = git_to_chrono(&author.when());
-
-  let committer = commit.committer();
-  let committer_name = committer.name().unwrap_or("[???]");
-  let committer_email = committer.email().unwrap_or("[???]");
-  let committer_time = git_to_chrono(&committer.when());
-
-  println!("{}", highlight_named_oid(repo, "tree", commit.tree_id()));
-
-  println!(
-    "{} {} {}",
-    author_name.cyan(),
-    author_email.bright_black(),
-    author_time.to_string().bright_blue()
-  );
-
-  if author_name != committer_name || author_email != committer_email {
-    println!(
-      "committed by {} {} {}",
-      committer_name.cyan(),
-      committer_email.bright_black(),
-      committer_time.to_string().bright_blue()
-    );
-  }
-
-  println!("{}", commit.message().unwrap_or(""));
+pub trait MilkRepo {
+  fn print_commit(&self, commit: &Commit);
+  fn print_tree(&self, tree: &Tree);
+  fn print_blob(&self, blob: &Blob);
+  fn print_tag(&self, tag: &Tag);
+  fn print_object(&self, object: &Object);
+  fn highlight_named_oid(&self, name: &str, oid: Oid) -> String;
+  fn get_short_id(&self, oid: Oid) -> String;
 }
 
-pub fn print_tree(repo: &Repository, tree: &Tree) {
-  for entry in tree.iter() {
-    let raw_name = entry.name().unwrap_or("[invalid utf-8]");
-    let name = match entry.kind() {
-      Some(ObjectType::Tree) => format!(
-        "{}/ {}",
-        raw_name.blue(),
-        get_short_id(repo, entry.id()).bright_black()
-      ),
-      Some(ObjectType::Commit) => format!(
-        "@{} {}",
-        raw_name.bright_red(),
-        get_short_id(repo, entry.id()).bright_black()
-      ),
-      Some(ObjectType::Tag) => format!(
-        "#{} {}",
-        raw_name.bright_cyan(),
-        get_short_id(repo, entry.id()).bright_black()
-      ),
-      _ => format!(
-        "{} {}",
-        raw_name,
-        get_short_id(repo, entry.id()).bright_black()
-      ),
-    };
-
-    println!("{}", name);
-  }
-}
-
-pub fn print_blob(_repo: &Repository, blob: &Blob) {
-  // _repo is unused here, but I'm keeping it to maintain the API that the
-  // rest of the print_* functions have
-  let mut stdout = io::stdout();
-
-  // what happens on failure?
-  match stdout.write(blob.content()) {
-    _ => (),
-  }
-}
-
-pub fn print_tag(repo: &Repository, tag: &Tag) {
-  println!("{}", highlight_named_oid(repo, "target", tag.target_id()));
-
-  let author = tag.tagger();
-  if let Some(author) = author {
+impl MilkRepo for Repository {
+  fn print_commit(&self, commit: &Commit) {
+    let author = commit.author();
     let author_name = author.name().unwrap_or("[???]");
     let author_email = author.email().unwrap_or("[???]");
     let author_time = git_to_chrono(&author.when());
+
+    let committer = commit.committer();
+    let committer_name = committer.name().unwrap_or("[???]");
+    let committer_email = committer.email().unwrap_or("[???]");
+    let committer_time = git_to_chrono(&committer.when());
+
+    println!("{}", self.highlight_named_oid("tree", commit.tree_id()));
 
     println!(
       "{} {} {}",
@@ -106,54 +48,122 @@ pub fn print_tag(repo: &Repository, tag: &Tag) {
       author_email.bright_black(),
       author_time.to_string().bright_blue()
     );
+
+    if author_name != committer_name || author_email != committer_email {
+      println!(
+        "committed by {} {} {}",
+        committer_name.cyan(),
+        committer_email.bright_black(),
+        committer_time.to_string().bright_blue()
+      );
+    }
+
+    println!("{}", commit.message().unwrap_or(""));
   }
 
-  println!("{}", tag.message().unwrap_or(""));
-}
+  fn print_tree(&self, tree: &Tree) {
+    for entry in tree.iter() {
+      let raw_name = entry.name().unwrap_or("[invalid utf-8]");
+      let name = match entry.kind() {
+        Some(ObjectType::Tree) => format!(
+          "{}/ {}",
+          raw_name.blue(),
+          self.get_short_id(entry.id()).bright_black()
+        ),
+        Some(ObjectType::Commit) => format!(
+          "@{} {}",
+          raw_name.bright_red(),
+          self.get_short_id(entry.id()).bright_black()
+        ),
+        Some(ObjectType::Tag) => format!(
+          "#{} {}",
+          raw_name.bright_cyan(),
+          self.get_short_id(entry.id()).bright_black()
+        ),
+        _ => format!(
+          "{} {}",
+          raw_name,
+          self.get_short_id(entry.id()).bright_black()
+        ),
+      };
 
-pub fn print_object(repo: &Repository, object: &Object) {
-  match object.kind() {
-    Some(ObjectType::Blob) => {
-      println!("{}", highlight_named_oid(&repo, "blob", object.id()));
-      let blob = object.as_blob().unwrap();
-      print_blob(repo, &blob);
-    }
-    Some(ObjectType::Tree) => {
-      println!("{}", highlight_named_oid(&repo, "tree", object.id()));
-      let tree = object.as_tree().unwrap();
-      print_tree(repo, &tree);
-    }
-    Some(ObjectType::Commit) => {
-      println!("{}", highlight_named_oid(&repo, "commit", object.id()));
-      let commit = object.as_commit().unwrap();
-      print_commit(repo, &commit);
-    }
-    Some(ObjectType::Tag) => {
-      println!("{}", highlight_named_oid(&repo, "tag", object.id()));
-      let tag = object.as_tag().unwrap();
-      print_tag(repo, &tag);
-    }
-    _ => {
-      println!("{}", highlight_named_oid(&repo, "unknown", object.id()));
+      println!("{}", name);
     }
   }
-}
 
-pub fn highlight_named_oid(repo: &Repository, name: &str, oid: Oid) -> String {
-  format!("{} {}", name.cyan(), get_short_id(repo, oid).bright_black())
-}
+  fn print_blob(&self, blob: &Blob) {
+    let mut stdout = io::stdout();
 
-pub fn get_short_id(repo: &Repository, oid: Oid) -> String {
-  // wtf is the better Rust pattern for this?
-  match repo.find_object(oid, None) {
-    Ok(object) => match object.short_id() {
-      Ok(buf) => match buf.as_str() {
-        Some(res) => res.to_string(),
+    // what happens on failure?
+    match stdout.write(blob.content()) {
+      _ => (),
+    }
+  }
+
+  fn print_tag(&self, tag: &Tag) {
+    println!("{}", self.highlight_named_oid("target", tag.target_id()));
+
+    let author = tag.tagger();
+    if let Some(author) = author {
+      let author_name = author.name().unwrap_or("[???]");
+      let author_email = author.email().unwrap_or("[???]");
+      let author_time = git_to_chrono(&author.when());
+
+      println!(
+        "{} {} {}",
+        author_name.cyan(),
+        author_email.bright_black(),
+        author_time.to_string().bright_blue()
+      );
+    }
+
+    println!("{}", tag.message().unwrap_or(""));
+  }
+
+  fn print_object(&self, object: &Object) {
+    match object.kind() {
+      Some(ObjectType::Blob) => {
+        println!("{}", self.highlight_named_oid("blob", object.id()));
+        let blob = object.as_blob().unwrap();
+        self.print_blob(&blob);
+      }
+      Some(ObjectType::Tree) => {
+        println!("{}", self.highlight_named_oid("tree", object.id()));
+        let tree = object.as_tree().unwrap();
+        self.print_tree(&tree);
+      }
+      Some(ObjectType::Commit) => {
+        println!("{}", self.highlight_named_oid("commit", object.id()));
+        let commit = object.as_commit().unwrap();
+        self.print_commit(&commit);
+      }
+      Some(ObjectType::Tag) => {
+        println!("{}", self.highlight_named_oid("tag", object.id()));
+        let tag = object.as_tag().unwrap();
+        self.print_tag(&tag);
+      }
+      _ => {
+        println!("{}", self.highlight_named_oid("unknown", object.id()));
+      }
+    }
+  }
+
+  fn highlight_named_oid(&self, name: &str, oid: Oid) -> String {
+    format!("{} {}", name.cyan(), self.get_short_id(oid).bright_black())
+  }
+
+  fn get_short_id(&self, oid: Oid) -> String {
+    // wtf is the better Rust pattern for this?
+    match self.find_object(oid, None) {
+      Ok(object) => match object.short_id() {
+        Ok(buf) => match buf.as_str() {
+          Some(res) => res.to_string(),
+          _ => oid.to_string(),
+        },
         _ => oid.to_string(),
       },
       _ => oid.to_string(),
-    },
-    _ => oid.to_string(),
+    }
   }
 }
 

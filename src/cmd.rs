@@ -2,11 +2,7 @@ use super::cli;
 use super::cli::BranchCommand;
 use super::cli::Command;
 use super::find_from_name;
-use super::get_short_id;
-use super::highlight_named_oid;
-use super::print_commit;
-use super::print_object;
-use super::print_tree;
+use super::MilkRepo;
 use colored::*;
 use exitcode;
 use failure::format_err;
@@ -377,11 +373,8 @@ pub fn branch_mv(globals: cli::Global, args: cli::BranchMv) -> Result<(), Error>
       .with_context(|_| "couldn't move branch")?;
 
     println!("Moved branch");
-    println!(
-      "{}",
-      highlight_named_oid(&repo, &args.src_name, commit.id())
-    );
-    print_commit(&repo, &commit);
+    println!("{}", repo.highlight_named_oid(&args.src_name, commit.id()));
+    repo.print_commit(&commit);
   } else {
     Err(failure::err_msg("dest object was not a commit"))?;
   }
@@ -402,9 +395,9 @@ pub fn branch_new(globals: cli::Global, args: cli::BranchNew) -> Result<(), Erro
       .with_context(|_| "couldn't create branch")?;
 
     println!("Created branch");
-    println!("{}", highlight_named_oid(&repo, &args.name, commit.id()));
+    println!("{}", repo.highlight_named_oid(&args.name, commit.id()));
 
-    print_commit(&repo, &commit);
+    repo.print_commit(&commit);
   } else {
     Err(failure::err_msg("object was not a commit"))?;
   }
@@ -440,8 +433,8 @@ pub fn branch_rename(globals: cli::Global, args: cli::BranchRename) -> Result<()
     .with_context(|_| "couldn't find commit")?;
 
   println!("Renamed branch {} => {}", args.src_name, args.dest_name);
-  println!("{}", highlight_named_oid(&repo, &args.dest_name, target));
-  print_commit(&repo, &commit);
+  println!("{}", repo.highlight_named_oid(&args.dest_name, target));
+  repo.print_commit(&commit);
 
   Ok(())
 }
@@ -471,8 +464,8 @@ pub fn branch_rm(globals: cli::Global, args: cli::BranchRm) -> Result<(), Error>
     .with_context(|_| "couldn't find commit")?;
 
   println!("Removed branch");
-  println!("{}", highlight_named_oid(&repo, &args.name, target));
-  print_commit(&repo, &commit);
+  println!("{}", repo.highlight_named_oid(&args.name, target));
+  repo.print_commit(&commit);
 
   Ok(())
 }
@@ -492,7 +485,7 @@ pub fn clean(globals: cli::Global, args: cli::Clean) -> Result<(), Error> {
   if !args.paths.is_empty() {
     for path in &args.paths {
       let oid = write_blob(&odb, path)?;
-      println!("{}", highlight_named_oid(&repo, path, oid));
+      println!("{}", repo.highlight_named_oid(path, oid));
     }
   } else {
     let mut status_opts = StatusOptions::new();
@@ -508,7 +501,7 @@ pub fn clean(globals: cli::Global, args: cli::Clean) -> Result<(), Error> {
         let status = entry.status();
         if status.is_wt_modified() || status.is_index_modified() {
           let oid = write_blob(&odb, path)?;
-          println!("{}", highlight_named_oid(&repo, path, oid));
+          println!("{}", repo.highlight_named_oid(path, oid));
         }
       }
     }
@@ -564,8 +557,8 @@ pub fn commit(globals: cli::Global, _args: cli::Commit) -> Result<(), Error> {
     .with_context(|_| "couldn't find commit")?;
 
   let head_name = head.shorthand().unwrap_or("[???]");
-  println!("{}", highlight_named_oid(&repo, head_name, commit.id()));
-  print_commit(&repo, &new_commit);
+  println!("{}", repo.highlight_named_oid(head_name, commit.id()));
+  repo.print_commit(&new_commit);
 
   Ok(())
 }
@@ -608,9 +601,9 @@ pub fn head(globals: cli::Global, _args: cli::Head) -> Result<(), Error> {
 
   // tf do I do if these aren't UTF-8? Quit?
   let head_name = head.shorthand().unwrap_or("[???]");
-  println!("{}", highlight_named_oid(&repo, head_name, commit.id()));
+  println!("{}", repo.highlight_named_oid(head_name, commit.id()));
 
-  print_commit(&repo, &commit);
+  repo.print_commit(&commit);
 
   Ok(())
 }
@@ -677,10 +670,7 @@ pub fn ls(globals: cli::Global, args: cli::Ls) -> Result<(), Error> {
     }
   };
 
-  println!(
-    "{}",
-    highlight_named_oid(&repo, &args.ref_name, commit.id())
-  );
+  println!("{}", repo.highlight_named_oid(&args.ref_name, commit.id()));
 
   if args.tree_path.is_absolute() {
     eprintln!("Tree path must be relative");
@@ -703,7 +693,7 @@ pub fn ls(globals: cli::Global, args: cli::Ls) -> Result<(), Error> {
         println!(
           "{}/ {}",
           frag_name.cyan(),
-          get_short_id(&repo, next_tree_id).bright_black()
+          repo.get_short_id(next_tree_id).bright_black()
         );
         tree = repo
           .find_tree(next_tree_id)
@@ -716,7 +706,7 @@ pub fn ls(globals: cli::Global, args: cli::Ls) -> Result<(), Error> {
     };
   }
 
-  print_tree(&repo, &tree);
+  repo.print_tree(&tree);
 
   Ok(())
 }
@@ -783,7 +773,7 @@ pub fn show(globals: cli::Global, args: cli::Show) -> Result<(), Error> {
 
   let object = find_from_name(&repo, &args.name).with_context(|_| "couldn't look up object")?;
 
-  print_object(&repo, &object);
+  repo.print_object(&object);
 
   Ok(())
 }
@@ -834,7 +824,7 @@ pub fn tag(globals: cli::Global, args: cli::Tag) -> Result<(), Error> {
     Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
 
   let object = find_from_name(&repo, &args.ref_name).with_context(|_| "couldn't look up object")?;
-  print_object(&repo, &object);
+  repo.print_object(&object);
 
   repo
     .tag_lightweight(&args.tag_name, &object, false)
