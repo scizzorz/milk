@@ -26,6 +26,8 @@ pub trait MilkRepo {
   fn print_object(&self, object: &Object);
   fn highlight_named_oid(&self, name: &str, oid: Oid) -> String;
   fn get_short_id(&self, oid: Oid) -> String;
+  fn find_from_refname<'repo>(&'repo self, name: &str) -> Result<Object<'repo>, Error>;
+  fn find_from_name<'repo>(&'repo self, name: &str) -> Result<Object<'repo>, Error>;
 }
 
 impl MilkRepo for Repository {
@@ -165,6 +167,36 @@ impl MilkRepo for Repository {
       _ => oid.to_string(),
     }
   }
+
+  fn find_from_refname<'repo>(&'repo self, name: &str) -> Result<Object<'repo>, Error> {
+    let oid = self.refname_to_id(name)?;
+    self.find_object(oid, Some(ObjectType::Any))
+  }
+
+  fn find_from_name<'repo>(&'repo self, name: &str) -> Result<Object<'repo>, Error> {
+    let mut iter = name.chars();
+    let head = iter.next();
+    let tail: String = iter.collect();
+
+    if head.is_none() {
+      self.find_from_refname("HEAD")
+    } else if let Some('#') = head {
+      self.find_from_refname(&format!("refs/tags/{}", tail))
+    } else if let Some('@') = head {
+      if tail.is_empty() {
+        self.find_from_refname("HEAD")
+      } else {
+        self.find_from_refname(&format!("refs/heads/{}", tail))
+      }
+    } else if let Some('/') = head {
+      self.find_from_refname(&tail)
+    } else {
+      let odb = self.odb()?;
+      let short_oid = Oid::from_str(name)?;
+      let oid = odb.exists_prefix(short_oid, name.len())?;
+      self.find_object(oid, Some(ObjectType::Any))
+    }
+  }
 }
 
 pub fn git_to_chrono(sig: &Time) -> DateTime<FixedOffset> {
@@ -172,37 +204,4 @@ pub fn git_to_chrono(sig: &Time) -> DateTime<FixedOffset> {
   let offset_sec = sig.offset_minutes() * 60;
   let fixed_offset = FixedOffset::east(offset_sec);
   fixed_offset.timestamp(timestamp, 0)
-}
-
-pub fn find_from_refname<'repo>(
-  repo: &'repo Repository,
-  name: &str,
-) -> Result<Object<'repo>, Error> {
-  let oid = repo.refname_to_id(name)?;
-  repo.find_object(oid, Some(ObjectType::Any))
-}
-
-pub fn find_from_name<'repo>(repo: &'repo Repository, name: &str) -> Result<Object<'repo>, Error> {
-  let mut iter = name.chars();
-  let head = iter.next();
-  let tail: String = iter.collect();
-
-  if head.is_none() {
-    find_from_refname(repo, "HEAD")
-  } else if let Some('#') = head {
-    find_from_refname(repo, &format!("refs/tags/{}", tail))
-  } else if let Some('@') = head {
-    if tail.is_empty() {
-      find_from_refname(repo, "HEAD")
-    } else {
-      find_from_refname(repo, &format!("refs/heads/{}", tail))
-    }
-  } else if let Some('/') = head {
-    find_from_refname(repo, &tail)
-  } else {
-    let odb = repo.odb()?;
-    let short_oid = Oid::from_str(name)?;
-    let oid = odb.exists_prefix(short_oid, name.len())?;
-    repo.find_object(oid, Some(ObjectType::Any))
-  }
 }

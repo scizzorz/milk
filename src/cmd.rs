@@ -1,7 +1,6 @@
 use super::cli;
 use super::cli::BranchCommand;
 use super::cli::Command;
-use super::find_from_name;
 use super::MilkRepo;
 use colored::*;
 use exitcode;
@@ -164,7 +163,9 @@ impl<'a> DiffTarget<'a> {
 
 // used by diff
 fn name_to_tree<'repo>(repo: &'repo Repository, s: &str) -> Result<Tree<'repo>, Error> {
-  let object = find_from_name(repo, s).with_context(|_| "couldn't find refname")?;
+  let object = repo
+    .find_from_name(s)
+    .with_context(|_| "couldn't find refname")?;
   let tree = object
     .peel_to_tree()
     .with_context(|_| "couldn't peel to commit HEAD")?;
@@ -362,8 +363,9 @@ pub fn branch_mv(globals: cli::Global, args: cli::BranchMv) -> Result<(), Error>
     .find_branch(&args.src_name, BranchType::Local)
     .with_context(|_| "couldn't find source branch")?;
 
-  let dest_object =
-    find_from_name(&repo, &args.dest_ref).with_context(|_| "couldn't look up dest ref")?;
+  let dest_object = repo
+    .find_from_name(&args.dest_ref)
+    .with_context(|_| "couldn't look up dest ref")?;
 
   if let Some(ObjectType::Commit) = dest_object.kind() {
     let commit = dest_object.into_commit().unwrap();
@@ -385,7 +387,9 @@ pub fn branch_mv(globals: cli::Global, args: cli::BranchMv) -> Result<(), Error>
 pub fn branch_new(globals: cli::Global, args: cli::BranchNew) -> Result<(), Error> {
   let repo =
     Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
-  let object = find_from_name(&repo, &args.ref_name).with_context(|_| "couldn't look up ref")?;
+  let object = repo
+    .find_from_name(&args.ref_name)
+    .with_context(|_| "couldn't look up ref")?;
 
   if let Some(ObjectType::Commit) = object.kind() {
     let commit = object.into_commit().unwrap();
@@ -661,7 +665,9 @@ pub fn ls(globals: cli::Global, args: cli::Ls) -> Result<(), Error> {
   let repo =
     Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
 
-  let object = find_from_name(&repo, &args.ref_name).with_context(|_| "couldn't find refname")?;
+  let object = repo
+    .find_from_name(&args.ref_name)
+    .with_context(|_| "couldn't find refname")?;
 
   let commit = match object.into_commit() {
     Ok(commit) => commit,
@@ -741,8 +747,9 @@ pub fn me(globals: cli::Global, _args: cli::Me) -> Result<(), Error> {
 pub fn restore(globals: cli::Global, args: cli::Restore) -> Result<(), Error> {
   let repo =
     Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
-  let object =
-    find_from_name(&repo, &args.object_name).with_context(|_| "couldn't look up object")?;
+  let object = repo
+    .find_from_name(&args.object_name)
+    .with_context(|_| "couldn't look up object")?;
 
   let blob = match object.into_blob() {
     Ok(blob) => blob,
@@ -771,7 +778,9 @@ pub fn show(globals: cli::Global, args: cli::Show) -> Result<(), Error> {
   let repo =
     Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
 
-  let object = find_from_name(&repo, &args.name).with_context(|_| "couldn't look up object")?;
+  let object = repo
+    .find_from_name(&args.name)
+    .with_context(|_| "couldn't look up object")?;
 
   repo.print_object(&object);
 
@@ -823,7 +832,9 @@ pub fn tag(globals: cli::Global, args: cli::Tag) -> Result<(), Error> {
   let repo =
     Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
 
-  let object = find_from_name(&repo, &args.ref_name).with_context(|_| "couldn't look up object")?;
+  let object = repo
+    .find_from_name(&args.ref_name)
+    .with_context(|_| "couldn't look up object")?;
   repo.print_object(&object);
 
   repo
