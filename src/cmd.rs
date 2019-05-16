@@ -2,16 +2,14 @@ use super::cli;
 use super::cli::BranchCommand;
 use super::cli::Command;
 use super::editor;
+use super::DiffTarget;
 use super::MilkRepo;
 use colored::*;
 use exitcode;
-use failure::format_err;
 use failure::Error;
 use failure::ResultExt;
 use git2::build::CheckoutBuilder;
 use git2::BranchType;
-use git2::Diff;
-use git2::DiffOptions;
 use git2::ObjectType;
 use git2::Oid;
 use git2::Repository;
@@ -85,125 +83,6 @@ fn handle_file(
     .to_str()
     .ok_or_else(|| failure::err_msg("Path is not UTF-8"))?;
   Ok(Some(String::from(final_filepath)))
-}
-
-// used by diff
-enum DiffTarget<'a> {
-  WorkingTree,
-  Index,
-  Name(&'a str),
-}
-
-// used by diff
-impl<'a> DiffTarget<'a> {
-  fn from_str(s: &str) -> DiffTarget {
-    match s {
-      "/WORK" => DiffTarget::WorkingTree,
-      "/INDEX" => DiffTarget::Index,
-      _ => DiffTarget::Name(s),
-    }
-  }
-}
-
-// used by diff
-fn name_to_tree<'repo>(repo: &'repo Repository, s: &str) -> Result<Tree<'repo>, Error> {
-  let tree = repo
-    .find_from_name(s)
-    .with_context(|_| "couldn't find refname")?
-    .peel_to_tree()
-    .with_context(|_| "couldn't peel to commit HEAD")?;
-  Ok(tree)
-}
-
-// used by diff
-fn make_diff<'repo>(
-  repo: &'repo Repository,
-  old_target: DiffTarget,
-  new_target: DiffTarget,
-) -> Result<Diff<'repo>, Error> {
-  let mut options = DiffOptions::new();
-
-  match (old_target, new_target) {
-    // tree..
-    (DiffTarget::Name(old), DiffTarget::WorkingTree) => {
-      let old_tree = name_to_tree(&repo, old).with_context(|_| "couldn't look up old tree")?;
-
-      let diff = repo
-        .diff_tree_to_workdir(Some(&old_tree), Some(&mut options))
-        .with_context(|_| "couldn't generate diff")?;
-      Ok(diff)
-    }
-
-    (DiffTarget::Name(old), DiffTarget::Name(new)) => {
-      let old_tree = name_to_tree(&repo, old).with_context(|_| "couldn't look up old tree")?;
-      let new_tree = name_to_tree(&repo, new).with_context(|_| "couldn't look up new tree")?;
-
-      let diff = repo
-        .diff_tree_to_tree(Some(&old_tree), Some(&new_tree), Some(&mut options))
-        .with_context(|_| "couldn't generate diff")?;
-      Ok(diff)
-    }
-
-    (DiffTarget::Name(old), DiffTarget::Index) => {
-      let old_tree = name_to_tree(&repo, old).with_context(|_| "couldn't look up old tree")?;
-      let index = repo.index().with_context(|_| "couldn't read index")?;
-
-      let diff = repo
-        .diff_tree_to_index(Some(&old_tree), Some(&index), Some(&mut options))
-        .with_context(|_| "couldn't generate diff")?;
-      Ok(diff)
-    }
-
-    // index..
-    (DiffTarget::Index, DiffTarget::WorkingTree) => {
-      let index = repo.index().with_context(|_| "couldn't read index")?;
-      let diff = repo
-        .diff_index_to_workdir(Some(&index), Some(&mut options))
-        .with_context(|_| "couldn't generate diff")?;
-
-      Ok(diff)
-    }
-
-    (DiffTarget::Index, DiffTarget::Name(new)) => {
-      let index = repo.index().with_context(|_| "couldn't read index")?;
-      let new_tree = name_to_tree(&repo, new).with_context(|_| "couldn't look up new tree")?;
-      options.reverse(true);
-
-      let diff = repo
-        .diff_tree_to_index(Some(&new_tree), Some(&index), Some(&mut options))
-        .with_context(|_| "couldn't generate diff")?;
-      Ok(diff)
-    }
-
-    (DiffTarget::Index, DiffTarget::Index) => {
-      // FIXME why? it probably works...
-      Err(format_err!("Cannot diff between identical targets"))
-    }
-
-    // working..
-    (DiffTarget::WorkingTree, DiffTarget::WorkingTree) => {
-      // FIXME why? it probably works...
-      Err(format_err!("Cannot diff between identical targets"))
-    }
-    (DiffTarget::WorkingTree, DiffTarget::Name(new)) => {
-      let new_tree = name_to_tree(&repo, new).with_context(|_| "couldn't look up new tree")?;
-      options.reverse(true);
-
-      let diff = repo
-        .diff_tree_to_workdir(Some(&new_tree), Some(&mut options))
-        .with_context(|_| "couldn't generate diff")?;
-      Ok(diff)
-    }
-    (DiffTarget::WorkingTree, DiffTarget::Index) => {
-      let index = repo.index().with_context(|_| "couldn't read index")?;
-      options.reverse(true);
-      let diff = repo
-        .diff_index_to_workdir(Some(&index), Some(&mut options))
-        .with_context(|_| "couldn't generate diff")?;
-
-      Ok(diff)
-    }
-  }
 }
 
 // used by status
@@ -420,7 +299,6 @@ pub fn branch_rm(globals: cli::Global, args: cli::BranchRm) -> Result<(), Error>
 pub fn clean(globals: cli::Global, args: cli::Clean) -> Result<(), Error> {
   let repo =
     Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
-  let odb = repo.odb().with_context(|_| "couldn't open odb")?;
 
   let mut checkout = CheckoutBuilder::new();
   checkout.force();
@@ -516,7 +394,9 @@ pub fn diff(globals: cli::Global, args: cli::Diff) -> Result<(), Error> {
   let old_target = DiffTarget::from_str(&args.old_tree);
   let new_target = DiffTarget::from_str(&args.new_tree);
 
-  let diff = make_diff(&repo, old_target, new_target).with_context(|_| "failed to diff")?;
+  let diff = repo
+    .make_diff(old_target, new_target)
+    .with_context(|_| "failed to diff")?;
 
   // this API is literally insane
   // example code yanked from here:

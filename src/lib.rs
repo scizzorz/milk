@@ -2,10 +2,13 @@ use chrono::offset::FixedOffset;
 use chrono::offset::TimeZone;
 use chrono::DateTime;
 use colored::*;
+use failure::format_err;
 use failure::Error;
 use failure::ResultExt;
 use git2::Blob;
 use git2::Commit;
+use git2::Diff;
+use git2::DiffOptions;
 use git2::Object;
 use git2::ObjectType;
 use git2::Oid;
@@ -36,6 +39,12 @@ pub trait MilkRepo {
   fn find_from_refname<'repo>(&'repo self, name: &str) -> Result<Object<'repo>, Error>;
   fn find_from_name<'repo>(&'repo self, name: &str) -> Result<Object<'repo>, Error>;
   fn write_blob(&self, path: &Path) -> Result<Oid, Error>;
+  fn name_to_tree<'repo>(&'repo self, s: &str) -> Result<Tree<'repo>, Error>;
+  fn make_diff<'repo>(
+    &'repo self,
+    old_target: DiffTarget,
+    new_target: DiffTarget,
+  ) -> Result<Diff<'repo>, Error>;
 }
 
 impl MilkRepo for Repository {
@@ -217,6 +226,133 @@ impl MilkRepo for Repository {
     let _size = handle.read_to_end(&mut bytes)?;
     let oid = odb.write(ObjectType::Blob, &bytes)?;
     Ok(oid)
+  }
+
+  fn name_to_tree<'repo>(&'repo self, s: &str) -> Result<Tree<'repo>, Error> {
+    let tree = self
+      .find_from_name(s)
+      .with_context(|_| "couldn't find refname")?
+      .peel_to_tree()
+      .with_context(|_| "couldn't peel to commit HEAD")?;
+    Ok(tree)
+  }
+
+  fn make_diff<'repo>(
+    &'repo self,
+    old_target: DiffTarget,
+    new_target: DiffTarget,
+  ) -> Result<Diff<'repo>, Error> {
+    let mut options = DiffOptions::new();
+
+    match (old_target, new_target) {
+      // tree..
+      (DiffTarget::Name(old), DiffTarget::WorkingTree) => {
+        let old_tree = self
+          .name_to_tree(old)
+          .with_context(|_| "couldn't look up old tree")?;
+
+        let diff = self
+          .diff_tree_to_workdir(Some(&old_tree), Some(&mut options))
+          .with_context(|_| "couldn't generate diff")?;
+        Ok(diff)
+      }
+
+      (DiffTarget::Name(old), DiffTarget::Name(new)) => {
+        let old_tree = self
+          .name_to_tree(old)
+          .with_context(|_| "couldn't look up old tree")?;
+        let new_tree = self
+          .name_to_tree(new)
+          .with_context(|_| "couldn't look up new tree")?;
+
+        let diff = self
+          .diff_tree_to_tree(Some(&old_tree), Some(&new_tree), Some(&mut options))
+          .with_context(|_| "couldn't generate diff")?;
+        Ok(diff)
+      }
+
+      (DiffTarget::Name(old), DiffTarget::Index) => {
+        let old_tree = self
+          .name_to_tree(old)
+          .with_context(|_| "couldn't look up old tree")?;
+        let index = self.index().with_context(|_| "couldn't read index")?;
+
+        let diff = self
+          .diff_tree_to_index(Some(&old_tree), Some(&index), Some(&mut options))
+          .with_context(|_| "couldn't generate diff")?;
+        Ok(diff)
+      }
+
+      // index..
+      (DiffTarget::Index, DiffTarget::WorkingTree) => {
+        let index = self.index().with_context(|_| "couldn't read index")?;
+        let diff = self
+          .diff_index_to_workdir(Some(&index), Some(&mut options))
+          .with_context(|_| "couldn't generate diff")?;
+
+        Ok(diff)
+      }
+
+      (DiffTarget::Index, DiffTarget::Name(new)) => {
+        let index = self.index().with_context(|_| "couldn't read index")?;
+        let new_tree = self
+          .name_to_tree(new)
+          .with_context(|_| "couldn't look up new tree")?;
+        options.reverse(true);
+
+        let diff = self
+          .diff_tree_to_index(Some(&new_tree), Some(&index), Some(&mut options))
+          .with_context(|_| "couldn't generate diff")?;
+        Ok(diff)
+      }
+
+      (DiffTarget::Index, DiffTarget::Index) => {
+        // FIXME why? it probably works...
+        Err(format_err!("Cannot diff between identical targets"))
+      }
+
+      // working..
+      (DiffTarget::WorkingTree, DiffTarget::WorkingTree) => {
+        // FIXME why? it probably works...
+        Err(format_err!("Cannot diff between identical targets"))
+      }
+      (DiffTarget::WorkingTree, DiffTarget::Name(new)) => {
+        let new_tree = self
+          .name_to_tree(new)
+          .with_context(|_| "couldn't look up new tree")?;
+        options.reverse(true);
+
+        let diff = self
+          .diff_tree_to_workdir(Some(&new_tree), Some(&mut options))
+          .with_context(|_| "couldn't generate diff")?;
+        Ok(diff)
+      }
+      (DiffTarget::WorkingTree, DiffTarget::Index) => {
+        let index = self.index().with_context(|_| "couldn't read index")?;
+        options.reverse(true);
+        let diff = self
+          .diff_index_to_workdir(Some(&index), Some(&mut options))
+          .with_context(|_| "couldn't generate diff")?;
+
+        Ok(diff)
+      }
+    }
+  }
+}
+
+pub enum DiffTarget<'a> {
+  WorkingTree,
+  Index,
+  Name(&'a str),
+}
+
+impl<'a> DiffTarget<'a> {
+  fn from_str(s: &str) -> DiffTarget {
+    match s {
+      "/WORK" => DiffTarget::WorkingTree,
+      "/INDEX" => DiffTarget::Index,
+      _ => DiffTarget::Name(s),
+    }
   }
 }
 
