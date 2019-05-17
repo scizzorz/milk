@@ -2,6 +2,7 @@ use super::cli;
 use super::cli::BranchCommand;
 use super::cli::Command;
 use super::editor;
+use super::prompt_char;
 use super::DiffTarget;
 use super::MilkRepo;
 use colored::*;
@@ -19,7 +20,6 @@ use git2::Status;
 use git2::StatusOptions;
 use git2::Tree;
 use std::fs::OpenOptions;
-use std::io;
 use std::io::prelude::*;
 use std::path::Path;
 use std::path::PathBuf;
@@ -45,16 +45,15 @@ fn handle_file(
   let path = Path::new(&filepath);
 
   if !path.exists() {
-    print!("File '{}' does not exist, still ignore? [Y/n] ", filepath);
-    io::stdout().flush().context("Could not flush stdout")?;
+    let force = prompt_char(
+      &format!("File {} does not exist, still ignore?", filepath),
+      "Yn",
+    )
+    .with_context(|_| "prompt failed")?;
+    println!("forcing: {}", force);
 
-    let mut input = String::new();
-    io::stdin()
-      .read_line(&mut input)
-      .context("Could not read stdin")?;
-
-    match input.trim_end() {
-      "y" | "Y" | "" => (),
+    match force {
+      'y' | 'Y' | '\n' => (),
       _ => return Ok(None),
     }
   }
@@ -69,11 +68,13 @@ fn handle_file(
     _ => path.to_path_buf(),
   };
 
-  let head = repo.head().with_context(|_| "couldn't locate HEAD")?;
-  let commit = head
+  let tree = repo
+    .head()
+    .with_context(|_| "couldn't locate HEAD")?
     .peel_to_commit()
-    .with_context(|_| "couldn't peel to commit")?;
-  let tree = commit.tree().with_context(|_| "couldn't locate tree")?;
+    .with_context(|_| "couldn't peel to commit")?
+    .tree()
+    .with_context(|_| "couldn't locate tree")?;
 
   if tree.get_path(&path).is_ok() {
     println!("Warning: file {} is currently tracked by git", filepath);

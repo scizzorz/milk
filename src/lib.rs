@@ -363,6 +363,34 @@ pub fn git_to_chrono(sig: &Time) -> DateTime<FixedOffset> {
   fixed_offset.timestamp(timestamp, 0)
 }
 
+/// `options` will be interspersed with forward slashes and presented to the
+/// user. For example, with `options = "Yn?"`, the user will be prompted for
+/// `[Y/n/?]`
+pub fn prompt_char(msg: &str, options: &str) -> Result<char, Error> {
+  // FIXME what if multiples of the same option char?
+
+  let option_chars: Vec<_> = options.chars().collect();
+  let mut option_display = String::new();
+  let mut sep = "";
+  for arg in option_chars {
+    option_display.push_str(sep);
+    option_display.push(arg);
+    sep = "/";
+  }
+  eprint!("{} [{}] ", msg, option_display);
+
+  io::stdout().flush().context("Could not flush stdout")?;
+
+  // getting this to only accept a single character without requiring the user
+  // to press enter is a giant nuisace, so I'm skipping it for now
+  let mut input = [0; 1];
+  io::stdin()
+    .read_exact(&mut input[..])
+    .context("Could not read stdin")?;
+
+  Ok(input[0] as char)
+}
+
 pub fn editor(path: &Path, contents: &str) -> Result<String, Error> {
   // FIXME one of the Err cases here is for a non-unicode value... I'd assume you
   // can run a non-unicode command, no?
