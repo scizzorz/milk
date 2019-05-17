@@ -2,7 +2,6 @@ use super::cli;
 use super::cli::BranchCommand;
 use super::cli::Command;
 use super::editor;
-use super::prompt_char;
 use super::DiffTarget;
 use super::MilkRepo;
 use colored::*;
@@ -59,8 +58,27 @@ fn canonicalize_path(repo: &Repository, path: &Path) -> Result<RepoPath, Error> 
   Ok(path)
 }
 
+fn ignore_string(repo: &Repository, line: &str) -> Result<(), Error> {
+  let workdir = repo
+    .workdir()
+    .ok_or_else(|| failure::err_msg("repository is bare"))?;
+
+  let gitignore_path = workdir.join(".gitignore");
+
+  let mut gitignore = OpenOptions::new()
+    .create(!gitignore_path.exists())
+    .append(true)
+    .open(workdir.join(".gitignore"))
+    .context("Couldn't open .gitignore file")?;
+
+  println!("{}: {} to .gitignore", "added".green(), line);
+  writeln!(gitignore, "{}", line).context("Couldn't write to .gitignore file")?;
+
+  Ok(())
+}
+
 // used by ignore
-fn handle_file(repo: &Repository, path: &Path) -> Result<Option<String>, Error> {
+fn ignore_file(repo: &Repository, path: &Path) -> Result<(), Error> {
   let canon_path = canonicalize_path(repo, &path).with_context(|_| "couldn't canonicalize path")?;
   let path = match canon_path {
     RepoPath::Path(x) => x,
@@ -81,13 +99,18 @@ fn handle_file(repo: &Repository, path: &Path) -> Result<Option<String>, Error> 
     .with_context(|_| "couldn't locate tree")?;
 
   if tree.get_path(&path).is_ok() {
-    println!("Warning: file {:?} is currently tracked by git", path);
+    eprintln!(
+      "{}: file {:?} is currently tracked by git",
+      "warning".red(),
+      path
+    );
   };
 
   let final_filepath = path
     .to_str()
     .ok_or_else(|| failure::err_msg("Path is not UTF-8"))?;
-  Ok(Some(String::from(final_filepath)))
+
+  ignore_string(repo, final_filepath)
 }
 
 // used by status
@@ -442,30 +465,11 @@ pub fn head(globals: cli::Global, _args: cli::Head) -> Result<(), Error> {
 pub fn ignore(globals: cli::Global, args: cli::Ignore) -> Result<(), Error> {
   let repo = Repository::discover(globals.repo_path).context("Couldn't open repository")?;
 
-  let to_ignore = if args.is_pattern {
-    Some(args.pattern)
+  if args.is_pattern {
+    ignore_string(&repo, &args.pattern)
   } else {
-    handle_file(&repo, &Path::new(&args.pattern))?
-  };
-
-  let workdir = repo
-    .workdir()
-    .ok_or_else(|| failure::err_msg("repository is bare"))?;
-
-  if let Some(to_ignore) = to_ignore {
-    let gitignore_path = workdir.join(".gitignore");
-
-    let mut gitignore = OpenOptions::new()
-      .create(!gitignore_path.exists())
-      .append(true)
-      .open(workdir.join(".gitignore"))
-      .context("Couldn't open .gitignore file")?;
-
-    println!("Adding {} to .gitignore", to_ignore);
-    writeln!(gitignore, "{}", to_ignore).context("Couldn't write to .gitignore file")?;
-  };
-
-  Ok(())
+    ignore_file(&repo, &Path::new(&args.pattern))
+  }
 }
 
 pub fn init(globals: cli::Global, args: cli::Init) -> Result<(), Error> {
