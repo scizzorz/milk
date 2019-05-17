@@ -7,6 +7,7 @@ use super::DiffTarget;
 use super::MilkRepo;
 use colored::*;
 use exitcode;
+use failure::format_err;
 use failure::Error;
 use failure::ResultExt;
 use git2::build::CheckoutBuilder;
@@ -36,36 +37,39 @@ fn find_subtree(tree: &Tree, name: &str) -> Option<Oid> {
   None
 }
 
-// used by ignore
-fn handle_file(
-  repo: &Repository,
-  filepath: String,
-  workdir: &Path,
-) -> Result<Option<String>, Error> {
-  let path = Path::new(&filepath);
+enum RepoPath {
+  Path(PathBuf),
+  NotFound,
+  NotRepo,
+}
 
-  if !path.exists() {
-    let force = prompt_char(
-      &format!("File {} does not exist, still ignore?", filepath),
-      "Yn",
-    )
-    .with_context(|_| "prompt failed")?;
-    println!("forcing: {}", force);
+fn canonicalize_path(repo: &Repository, path: &Path) -> Result<RepoPath, Error> {
+  let workdir = repo
+    .workdir()
+    .ok_or_else(|| failure::err_msg("repository is bare"))?;
 
-    match force {
-      'y' | 'Y' | '\n' => (),
-      _ => return Ok(None),
-    }
-  }
-
-  // Try to transform path into its canonical path
-  // from the workdir
+  // Try to transform path into its canonical path from the workdir
   let path = match path.canonicalize() {
     Ok(abs_path) => match abs_path.strip_prefix(workdir) {
-      Ok(rel_path) => rel_path.to_path_buf(),
-      _ => path.to_path_buf(),
+      Ok(rel_path) => RepoPath::Path(rel_path.to_path_buf()),
+      Err(_) => RepoPath::NotRepo,
     },
-    _ => path.to_path_buf(),
+    Err(_) => RepoPath::NotFound,
+  };
+  Ok(path)
+}
+
+// used by ignore
+fn handle_file(repo: &Repository, path: &Path) -> Result<Option<String>, Error> {
+  let canon_path = canonicalize_path(repo, &path).with_context(|_| "couldn't canonicalize path")?;
+  let path = match canon_path {
+    RepoPath::Path(x) => x,
+    RepoPath::NotFound => {
+      return Err(format_err!("{:?} does not exist", path));
+    }
+    RepoPath::NotRepo => {
+      return Err(format_err!("{:?} is not in this repo", path));
+    }
   };
 
   let tree = repo
@@ -77,7 +81,7 @@ fn handle_file(
     .with_context(|_| "couldn't locate tree")?;
 
   if tree.get_path(&path).is_ok() {
-    println!("Warning: file {} is currently tracked by git", filepath);
+    println!("Warning: file {:?} is currently tracked by git", path);
   };
 
   let final_filepath = path
@@ -438,20 +442,15 @@ pub fn head(globals: cli::Global, _args: cli::Head) -> Result<(), Error> {
 pub fn ignore(globals: cli::Global, args: cli::Ignore) -> Result<(), Error> {
   let repo = Repository::discover(globals.repo_path).context("Couldn't open repository")?;
 
-  let workdir_bytes = repo
-    .workdir()
-    .ok_or_else(|| failure::err_msg("repository is bare"))?;
-  let workdir = Path::new(
-    workdir_bytes
-      .to_str()
-      .ok_or_else(|| failure::err_msg("path is not utf-8"))?,
-  );
-
   let to_ignore = if args.is_pattern {
     Some(args.pattern)
   } else {
-    handle_file(&repo, args.pattern, &workdir)?
+    handle_file(&repo, &Path::new(&args.pattern))?
   };
+
+  let workdir = repo
+    .workdir()
+    .ok_or_else(|| failure::err_msg("repository is bare"))?;
 
   if let Some(to_ignore) = to_ignore {
     let gitignore_path = workdir.join(".gitignore");
