@@ -87,6 +87,8 @@ functionality. It does not mean it's completely finished.
 * [ ] `switch` - Switch HEAD to something else
 * [ ] `update` - Try to pull new changes from a remote, including
   fastforwarding local branches and stuff
+* [ ] `sync` - Try to push/pull new changes from a remote, prompting the user
+  to rebase if there's not a fast-forward avaialble
 * [x] `commit` - Obvious
 * [ ] `merge` - Obvious, but with a change: when merging two branches, *both*
   branches will update to the merge commit. I find too often that I `checkout

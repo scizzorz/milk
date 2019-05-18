@@ -1,309 +1,27 @@
 use super::cli;
 use super::cli::BranchCommand;
 use super::cli::Command;
-use super::find_from_name;
-use super::get_short_id;
-use super::highlight_named_oid;
-use super::print_commit;
-use super::print_object;
-use super::print_tree;
+use super::editor;
+use super::find_subtree;
+use super::get_status_string;
+use super::DiffTarget;
+use super::MilkRepo;
 use colored::*;
 use exitcode;
-use failure::format_err;
 use failure::Error;
 use failure::ResultExt;
 use git2::build::CheckoutBuilder;
 use git2::BranchType;
-use git2::Diff;
-use git2::DiffOptions;
 use git2::ObjectType;
-use git2::Odb;
-use git2::Oid;
 use git2::Repository;
 use git2::RepositoryInitOptions;
 use git2::ResetType;
-use git2::Status;
 use git2::StatusOptions;
-use git2::Tree;
-use std::env;
-use std::fs::File;
 use std::fs::OpenOptions;
-use std::io;
 use std::io::prelude::*;
-use std::io::Read;
 use std::path::Path;
 use std::path::PathBuf;
-use std::process;
 use std::process::exit;
-
-// used by commit
-fn temporary_editor(path: &Path, contents: &str) -> Result<String, Error> {
-  // FIXME one of the Err cases here is for a non-unicode value... I'd assume you
-  // can run a non-unicode command, no?
-  let editor = env::var("EDITOR").with_context(|_| "$EDITOR is not defined.")?;
-
-  let mut file = OpenOptions::new()
-    .write(true)
-    .truncate(true)
-    .create(true)
-    .open(path)
-    .with_context(|_| "couldn't open $EDITOR file")?;
-
-  file
-    .write_all(contents.as_bytes())
-    .with_context(|_| "couldn't write $EDITOR file contents")?;
-
-  file
-    .sync_all()
-    .with_context(|_| "couldn't sync $EDITOR file contents")?;
-
-  let mut editor_command = process::Command::new(editor);
-  editor_command.arg(&path);
-
-  editor_command
-    .spawn()
-    .and_then(|mut handle| handle.wait())
-    .with_context(|_| "$EDITOR failed for some reason")?;
-
-  let mut file = File::open(path).with_context(|_| "couldn't re-open file")?;
-
-  let mut contents = String::new();
-  file
-    .read_to_string(&mut contents)
-    .with_context(|_| "couldn't read from file")?;
-
-  if std::fs::remove_file(&path).is_err() {
-    eprintln!("WARNING: Unable to delete {} after use", path.display());
-  }
-
-  Ok(contents)
-}
-
-// used by ls
-fn find_subtree(tree: &Tree, name: &str) -> Option<Oid> {
-  for entry in tree.iter() {
-    let raw_name = entry.name().unwrap_or("[???]");
-    if raw_name == name {
-      return Some(entry.id());
-    }
-  }
-  None
-}
-
-// used by ignore
-fn handle_file(
-  repo: &Repository,
-  filepath: String,
-  workdir: &Path,
-) -> Result<Option<String>, Error> {
-  let path = Path::new(&filepath);
-
-  if !path.exists() {
-    print!("File '{}' does not exist, still ignore? [Y/n] ", filepath);
-    io::stdout().flush().context("Could not flush stdout")?;
-
-    let mut input = String::new();
-    io::stdin()
-      .read_line(&mut input)
-      .context("Could not read stdin")?;
-
-    match input.trim_end() {
-      "y" | "Y" | "" => (),
-      _ => return Ok(None),
-    }
-  }
-
-  // Try to transform path into its canonical path
-  // from the workdir
-  let path = match path.canonicalize() {
-    Ok(abs_path) => match abs_path.strip_prefix(workdir) {
-      Ok(rel_path) => rel_path.to_path_buf(),
-      _ => path.to_path_buf(),
-    },
-    _ => path.to_path_buf(),
-  };
-
-  let head = repo.head().with_context(|_| "couldn't locate HEAD")?;
-  let commit = head
-    .peel_to_commit()
-    .with_context(|_| "couldn't peel to commit")?;
-  let tree = commit.tree().with_context(|_| "couldn't locate tree")?;
-
-  if tree.get_path(&path).is_ok() {
-    println!("Warning: file {} is currently tracked by git", filepath);
-  };
-
-  let final_filepath = path
-    .to_str()
-    .ok_or_else(|| failure::err_msg("Path is not UTF-8"))?;
-  Ok(Some(String::from(final_filepath)))
-}
-
-// used by clean
-fn write_blob(odb: &Odb, path: &str) -> Result<Oid, Error> {
-  let mut handle = File::open(path)?;
-  let mut bytes = Vec::new();
-  let _size = handle.read_to_end(&mut bytes)?;
-  let oid = odb.write(ObjectType::Blob, &bytes)?;
-  Ok(oid)
-}
-
-// used by diff
-enum DiffTarget<'a> {
-  WorkingTree,
-  Index,
-  Name(&'a str),
-}
-
-// used by diff
-impl<'a> DiffTarget<'a> {
-  fn from_str(s: &str) -> DiffTarget {
-    match s {
-      "/WORK" => DiffTarget::WorkingTree,
-      "/INDEX" => DiffTarget::Index,
-      _ => DiffTarget::Name(s),
-    }
-  }
-}
-
-// used by diff
-fn name_to_tree<'repo>(repo: &'repo Repository, s: &str) -> Result<Tree<'repo>, Error> {
-  let object = find_from_name(repo, s).with_context(|_| "couldn't find refname")?;
-  let tree = object
-    .peel_to_tree()
-    .with_context(|_| "couldn't peel to commit HEAD")?;
-  Ok(tree)
-}
-
-// used by diff
-fn make_diff<'repo>(
-  repo: &'repo Repository,
-  old_target: DiffTarget,
-  new_target: DiffTarget,
-) -> Result<Diff<'repo>, Error> {
-  let mut options = DiffOptions::new();
-
-  match (old_target, new_target) {
-    // tree..
-    (DiffTarget::Name(old), DiffTarget::WorkingTree) => {
-      let old_tree = name_to_tree(&repo, old).with_context(|_| "couldn't look up old tree")?;
-
-      let diff = repo
-        .diff_tree_to_workdir(Some(&old_tree), Some(&mut options))
-        .with_context(|_| "couldn't generate diff")?;
-      Ok(diff)
-    }
-
-    (DiffTarget::Name(old), DiffTarget::Name(new)) => {
-      let old_tree = name_to_tree(&repo, old).with_context(|_| "couldn't look up old tree")?;
-      let new_tree = name_to_tree(&repo, new).with_context(|_| "couldn't look up new tree")?;
-
-      let diff = repo
-        .diff_tree_to_tree(Some(&old_tree), Some(&new_tree), Some(&mut options))
-        .with_context(|_| "couldn't generate diff")?;
-      Ok(diff)
-    }
-
-    (DiffTarget::Name(old), DiffTarget::Index) => {
-      let old_tree = name_to_tree(&repo, old).with_context(|_| "couldn't look up old tree")?;
-      let index = repo.index().with_context(|_| "couldn't read index")?;
-
-      let diff = repo
-        .diff_tree_to_index(Some(&old_tree), Some(&index), Some(&mut options))
-        .with_context(|_| "couldn't generate diff")?;
-      Ok(diff)
-    }
-
-    // index..
-    (DiffTarget::Index, DiffTarget::WorkingTree) => {
-      let index = repo.index().with_context(|_| "couldn't read index")?;
-      let diff = repo
-        .diff_index_to_workdir(Some(&index), Some(&mut options))
-        .with_context(|_| "couldn't generate diff")?;
-
-      Ok(diff)
-    }
-
-    (DiffTarget::Index, DiffTarget::Name(new)) => {
-      let index = repo.index().with_context(|_| "couldn't read index")?;
-      let new_tree = name_to_tree(&repo, new).with_context(|_| "couldn't look up new tree")?;
-      options.reverse(true);
-
-      let diff = repo
-        .diff_tree_to_index(Some(&new_tree), Some(&index), Some(&mut options))
-        .with_context(|_| "couldn't generate diff")?;
-      Ok(diff)
-    }
-
-    (DiffTarget::Index, DiffTarget::Index) => {
-      // FIXME why? it probably works...
-      Err(format_err!("Cannot diff between identical targets"))
-    }
-
-    // working..
-    (DiffTarget::WorkingTree, DiffTarget::WorkingTree) => {
-      // FIXME why? it probably works...
-      Err(format_err!("Cannot diff between identical targets"))
-    }
-    (DiffTarget::WorkingTree, DiffTarget::Name(new)) => {
-      let new_tree = name_to_tree(&repo, new).with_context(|_| "couldn't look up new tree")?;
-      options.reverse(true);
-
-      let diff = repo
-        .diff_tree_to_workdir(Some(&new_tree), Some(&mut options))
-        .with_context(|_| "couldn't generate diff")?;
-      Ok(diff)
-    }
-    (DiffTarget::WorkingTree, DiffTarget::Index) => {
-      let index = repo.index().with_context(|_| "couldn't read index")?;
-      options.reverse(true);
-      let diff = repo
-        .diff_index_to_workdir(Some(&index), Some(&mut options))
-        .with_context(|_| "couldn't generate diff")?;
-
-      Ok(diff)
-    }
-  }
-}
-
-// used by status
-fn get_status_string(status: Status) -> String {
-  let index_string = if status.is_index_new() {
-    "new".cyan()
-  } else if status.is_index_modified() {
-    "mod".green()
-  } else if status.is_index_deleted() {
-    "del".red()
-  } else if status.is_index_renamed() {
-    "ren".blue()
-  } else if status.is_index_typechange() {
-    "typ".blue()
-  } else {
-    "   ".normal()
-  };
-
-  let working_string = if status.is_wt_new() {
-    "new".bright_cyan()
-  } else if status.is_wt_modified() {
-    "mod".bright_green()
-  } else if status.is_wt_deleted() {
-    "del".bright_red()
-  } else if status.is_wt_renamed() {
-    "ren".bright_blue()
-  } else if status.is_wt_typechange() {
-    "typ".bright_blue()
-  } else {
-    "   ".normal()
-  };
-
-  if status.is_ignored() {
-    format!("{}", " ignored".white())
-  } else if status.is_conflicted() {
-    format!("{}", "conflict".red())
-  } else {
-    format!(" {} {}", index_string, working_string)
-  }
-}
 
 pub fn main(args: cli::Root) -> Result<(), Error> {
   match args.command {
@@ -366,8 +84,9 @@ pub fn branch_mv(globals: cli::Global, args: cli::BranchMv) -> Result<(), Error>
     .find_branch(&args.src_name, BranchType::Local)
     .with_context(|_| "couldn't find source branch")?;
 
-  let dest_object =
-    find_from_name(&repo, &args.dest_ref).with_context(|_| "couldn't look up dest ref")?;
+  let dest_object = repo
+    .find_from_name(&args.dest_ref)
+    .with_context(|_| "couldn't look up dest ref")?;
 
   if let Some(ObjectType::Commit) = dest_object.kind() {
     let commit = dest_object.into_commit().unwrap();
@@ -377,11 +96,8 @@ pub fn branch_mv(globals: cli::Global, args: cli::BranchMv) -> Result<(), Error>
       .with_context(|_| "couldn't move branch")?;
 
     println!("Moved branch");
-    println!(
-      "{}",
-      highlight_named_oid(&repo, &args.src_name, commit.id())
-    );
-    print_commit(&repo, &commit);
+    println!("{}", repo.highlight_named_oid(&args.src_name, commit.id()));
+    repo.print_commit(&commit);
   } else {
     Err(failure::err_msg("dest object was not a commit"))?;
   }
@@ -392,7 +108,9 @@ pub fn branch_mv(globals: cli::Global, args: cli::BranchMv) -> Result<(), Error>
 pub fn branch_new(globals: cli::Global, args: cli::BranchNew) -> Result<(), Error> {
   let repo =
     Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
-  let object = find_from_name(&repo, &args.ref_name).with_context(|_| "couldn't look up ref")?;
+  let object = repo
+    .find_from_name(&args.ref_name)
+    .with_context(|_| "couldn't look up ref")?;
 
   if let Some(ObjectType::Commit) = object.kind() {
     let commit = object.into_commit().unwrap();
@@ -402,9 +120,9 @@ pub fn branch_new(globals: cli::Global, args: cli::BranchNew) -> Result<(), Erro
       .with_context(|_| "couldn't create branch")?;
 
     println!("Created branch");
-    println!("{}", highlight_named_oid(&repo, &args.name, commit.id()));
+    println!("{}", repo.highlight_named_oid(&args.name, commit.id()));
 
-    print_commit(&repo, &commit);
+    repo.print_commit(&commit);
   } else {
     Err(failure::err_msg("object was not a commit"))?;
   }
@@ -440,8 +158,8 @@ pub fn branch_rename(globals: cli::Global, args: cli::BranchRename) -> Result<()
     .with_context(|_| "couldn't find commit")?;
 
   println!("Renamed branch {} => {}", args.src_name, args.dest_name);
-  println!("{}", highlight_named_oid(&repo, &args.dest_name, target));
-  print_commit(&repo, &commit);
+  println!("{}", repo.highlight_named_oid(&args.dest_name, target));
+  repo.print_commit(&commit);
 
   Ok(())
 }
@@ -471,8 +189,8 @@ pub fn branch_rm(globals: cli::Global, args: cli::BranchRm) -> Result<(), Error>
     .with_context(|_| "couldn't find commit")?;
 
   println!("Removed branch");
-  println!("{}", highlight_named_oid(&repo, &args.name, target));
-  print_commit(&repo, &commit);
+  println!("{}", repo.highlight_named_oid(&args.name, target));
+  repo.print_commit(&commit);
 
   Ok(())
 }
@@ -480,7 +198,6 @@ pub fn branch_rm(globals: cli::Global, args: cli::BranchRm) -> Result<(), Error>
 pub fn clean(globals: cli::Global, args: cli::Clean) -> Result<(), Error> {
   let repo =
     Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
-  let odb = repo.odb().with_context(|_| "couldn't open odb")?;
 
   let mut checkout = CheckoutBuilder::new();
   checkout.force();
@@ -491,8 +208,8 @@ pub fn clean(globals: cli::Global, args: cli::Clean) -> Result<(), Error> {
 
   if !args.paths.is_empty() {
     for path in &args.paths {
-      let oid = write_blob(&odb, path)?;
-      println!("{}", highlight_named_oid(&repo, path, oid));
+      let oid = repo.write_blob(Path::new(path))?;
+      println!("{}", repo.highlight_named_oid(path, oid));
     }
   } else {
     let mut status_opts = StatusOptions::new();
@@ -507,8 +224,8 @@ pub fn clean(globals: cli::Global, args: cli::Clean) -> Result<(), Error> {
       if let Some(path) = entry.path() {
         let status = entry.status();
         if status.is_wt_modified() || status.is_index_modified() {
-          let oid = write_blob(&odb, path)?;
-          println!("{}", highlight_named_oid(&repo, path, oid));
+          let oid = repo.write_blob(Path::new(path))?;
+          println!("{}", repo.highlight_named_oid(path, oid));
         }
       }
     }
@@ -546,8 +263,7 @@ pub fn commit(globals: cli::Global, _args: cli::Commit) -> Result<(), Error> {
   message_file_path.push(repo.path());
   message_file_path.push("COMMIT_EDITMSG");
 
-  let message =
-    temporary_editor(&message_file_path, "").with_context(|_| "couldn't get message")?;
+  let message = editor(&message_file_path, "").with_context(|_| "couldn't get message")?;
   let message = message.trim();
 
   if message.is_empty() {
@@ -564,8 +280,8 @@ pub fn commit(globals: cli::Global, _args: cli::Commit) -> Result<(), Error> {
     .with_context(|_| "couldn't find commit")?;
 
   let head_name = head.shorthand().unwrap_or("[???]");
-  println!("{}", highlight_named_oid(&repo, head_name, commit.id()));
-  print_commit(&repo, &new_commit);
+  println!("{}", repo.highlight_named_oid(head_name, commit.id()));
+  repo.print_commit(&new_commit);
 
   Ok(())
 }
@@ -577,7 +293,9 @@ pub fn diff(globals: cli::Global, args: cli::Diff) -> Result<(), Error> {
   let old_target = DiffTarget::from_str(&args.old_tree);
   let new_target = DiffTarget::from_str(&args.new_tree);
 
-  let diff = make_diff(&repo, old_target, new_target).with_context(|_| "failed to diff")?;
+  let diff = repo
+    .make_diff(old_target, new_target)
+    .with_context(|_| "failed to diff")?;
 
   // this API is literally insane
   // example code yanked from here:
@@ -608,9 +326,9 @@ pub fn head(globals: cli::Global, _args: cli::Head) -> Result<(), Error> {
 
   // tf do I do if these aren't UTF-8? Quit?
   let head_name = head.shorthand().unwrap_or("[???]");
-  println!("{}", highlight_named_oid(&repo, head_name, commit.id()));
+  println!("{}", repo.highlight_named_oid(head_name, commit.id()));
 
-  print_commit(&repo, &commit);
+  repo.print_commit(&commit);
 
   Ok(())
 }
@@ -618,35 +336,11 @@ pub fn head(globals: cli::Global, _args: cli::Head) -> Result<(), Error> {
 pub fn ignore(globals: cli::Global, args: cli::Ignore) -> Result<(), Error> {
   let repo = Repository::discover(globals.repo_path).context("Couldn't open repository")?;
 
-  let workdir_bytes = repo
-    .workdir()
-    .ok_or_else(|| failure::err_msg("repository is bare"))?;
-  let workdir = Path::new(
-    workdir_bytes
-      .to_str()
-      .ok_or_else(|| failure::err_msg("path is not utf-8"))?,
-  );
-
-  let to_ignore = if args.is_pattern {
-    Some(args.pattern)
+  if args.is_pattern {
+    repo.ignore_string(&args.pattern)
   } else {
-    handle_file(&repo, args.pattern, &workdir)?
-  };
-
-  if let Some(to_ignore) = to_ignore {
-    let gitignore_path = workdir.join(".gitignore");
-
-    let mut gitignore = OpenOptions::new()
-      .create(!gitignore_path.exists())
-      .append(true)
-      .open(workdir.join(".gitignore"))
-      .context("Couldn't open .gitignore file")?;
-
-    println!("Adding {} to .gitignore", to_ignore);
-    writeln!(gitignore, "{}", to_ignore).context("Couldn't write to .gitignore file")?;
-  };
-
-  Ok(())
+    repo.ignore_file(&Path::new(&args.pattern))
+  }
 }
 
 pub fn init(globals: cli::Global, args: cli::Init) -> Result<(), Error> {
@@ -668,7 +362,9 @@ pub fn ls(globals: cli::Global, args: cli::Ls) -> Result<(), Error> {
   let repo =
     Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
 
-  let object = find_from_name(&repo, &args.ref_name).with_context(|_| "couldn't find refname")?;
+  let object = repo
+    .find_from_name(&args.ref_name)
+    .with_context(|_| "couldn't find refname")?;
 
   let commit = match object.into_commit() {
     Ok(commit) => commit,
@@ -677,10 +373,7 @@ pub fn ls(globals: cli::Global, args: cli::Ls) -> Result<(), Error> {
     }
   };
 
-  println!(
-    "{}",
-    highlight_named_oid(&repo, &args.ref_name, commit.id())
-  );
+  println!("{}", repo.highlight_named_oid(&args.ref_name, commit.id()));
 
   if args.tree_path.is_absolute() {
     eprintln!("Tree path must be relative");
@@ -703,7 +396,7 @@ pub fn ls(globals: cli::Global, args: cli::Ls) -> Result<(), Error> {
         println!(
           "{}/ {}",
           frag_name.cyan(),
-          get_short_id(&repo, next_tree_id).bright_black()
+          repo.get_short_id(next_tree_id).bright_black()
         );
         tree = repo
           .find_tree(next_tree_id)
@@ -716,7 +409,7 @@ pub fn ls(globals: cli::Global, args: cli::Ls) -> Result<(), Error> {
     };
   }
 
-  print_tree(&repo, &tree);
+  repo.print_tree(&tree);
 
   Ok(())
 }
@@ -751,8 +444,9 @@ pub fn me(globals: cli::Global, _args: cli::Me) -> Result<(), Error> {
 pub fn restore(globals: cli::Global, args: cli::Restore) -> Result<(), Error> {
   let repo =
     Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
-  let object =
-    find_from_name(&repo, &args.object_name).with_context(|_| "couldn't look up object")?;
+  let object = repo
+    .find_from_name(&args.object_name)
+    .with_context(|_| "couldn't look up object")?;
 
   let blob = match object.into_blob() {
     Ok(blob) => blob,
@@ -781,9 +475,11 @@ pub fn show(globals: cli::Global, args: cli::Show) -> Result<(), Error> {
   let repo =
     Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
 
-  let object = find_from_name(&repo, &args.name).with_context(|_| "couldn't look up object")?;
+  let object = repo
+    .find_from_name(&args.name)
+    .with_context(|_| "couldn't look up object")?;
 
-  print_object(&repo, &object);
+  repo.print_object(&object);
 
   Ok(())
 }
@@ -833,8 +529,10 @@ pub fn tag(globals: cli::Global, args: cli::Tag) -> Result<(), Error> {
   let repo =
     Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
 
-  let object = find_from_name(&repo, &args.ref_name).with_context(|_| "couldn't look up object")?;
-  print_object(&repo, &object);
+  let object = repo
+    .find_from_name(&args.ref_name)
+    .with_context(|_| "couldn't look up object")?;
+  repo.print_object(&object);
 
   repo
     .tag_lightweight(&args.tag_name, &object, false)
