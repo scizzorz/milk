@@ -23,10 +23,17 @@ use std::io;
 use std::io::prelude::*;
 use std::io::Write;
 use std::path::Path;
+use std::path::PathBuf;
 use std::process;
 
 pub mod cli;
 pub mod cmd;
+
+pub enum RepoPath {
+  Path(PathBuf),
+  NotFound,
+  NotRepo,
+}
 
 pub trait MilkRepo {
   fn print_commit(&self, commit: &Commit);
@@ -45,6 +52,9 @@ pub trait MilkRepo {
     old_target: DiffTarget,
     new_target: DiffTarget,
   ) -> Result<Diff<'repo>, Error>;
+  fn canonicalize_path(&self, path: &Path) -> Result<RepoPath, Error>;
+  fn ignore_string(&self, line: &str) -> Result<(), Error>;
+  fn ignore_file(&self, path: &Path) -> Result<(), Error>;
 }
 
 impl MilkRepo for Repository {
@@ -337,6 +347,79 @@ impl MilkRepo for Repository {
         Ok(diff)
       }
     }
+  }
+
+  fn canonicalize_path(&self, path: &Path) -> Result<RepoPath, Error> {
+    let workdir = self
+      .workdir()
+      .ok_or_else(|| failure::err_msg("repository is bare"))?;
+
+    // Try to transform path into its canonical path from the workdir
+    let path = match path.canonicalize() {
+      Ok(abs_path) => match abs_path.strip_prefix(workdir) {
+        Ok(rel_path) => RepoPath::Path(rel_path.to_path_buf()),
+        Err(_) => RepoPath::NotRepo,
+      },
+      Err(_) => RepoPath::NotFound,
+    };
+    Ok(path)
+  }
+
+  fn ignore_string(&self, line: &str) -> Result<(), Error> {
+    let workdir = self
+      .workdir()
+      .ok_or_else(|| failure::err_msg("repository is bare"))?;
+
+    let gitignore_path = workdir.join(".gitignore");
+
+    let mut gitignore = OpenOptions::new()
+      .create(!gitignore_path.exists())
+      .append(true)
+      .open(workdir.join(".gitignore"))
+      .context("Couldn't open .gitignore file")?;
+
+    println!("{}: {} to .gitignore", "added".green(), line);
+    writeln!(gitignore, "{}", line).context("Couldn't write to .gitignore file")?;
+
+    Ok(())
+  }
+
+  fn ignore_file(&self, path: &Path) -> Result<(), Error> {
+    let canon_path = self
+      .canonicalize_path(&path)
+      .with_context(|_| "couldn't canonicalize path")?;
+
+    let path = match canon_path {
+      RepoPath::Path(x) => x,
+      RepoPath::NotFound => {
+        return Err(format_err!("{:?} does not exist", path));
+      }
+      RepoPath::NotRepo => {
+        return Err(format_err!("{:?} is not in this repo", path));
+      }
+    };
+
+    let tree = self
+      .head()
+      .with_context(|_| "couldn't locate HEAD")?
+      .peel_to_commit()
+      .with_context(|_| "couldn't peel to commit")?
+      .tree()
+      .with_context(|_| "couldn't locate tree")?;
+
+    if tree.get_path(&path).is_ok() {
+      eprintln!(
+        "{}: file {:?} is currently tracked by git",
+        "warning".red(),
+        path
+      );
+    };
+
+    let final_filepath = path
+      .to_str()
+      .ok_or_else(|| failure::err_msg("path is not utf-8"))?;
+
+    self.ignore_string(final_filepath)
   }
 }
 
