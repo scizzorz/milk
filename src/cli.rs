@@ -134,6 +134,11 @@ pub enum BranchCommand {
   #[structopt(name = "rm")]
   #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
   Rm(BranchRm),
+
+  /// Switch branches
+  #[structopt(name = "switch")]
+  #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+  Switch(BranchSwitch),
 }
 
 #[derive(StructOpt, Debug)]
@@ -166,6 +171,18 @@ pub struct BranchNew {
 
   /// Name of the new branch
   pub name: String,
+}
+
+#[derive(StructOpt, Debug)]
+pub struct BranchSwitch {
+  /// Name of the branch to switch to
+  pub name: String,
+
+  /// Whether to stash changes in a WIP commit or carry them to the new branch
+  /// Does not affect the command when switching to a branch that already has
+  /// stashed changes.
+  #[structopt(long = "no-stash", short = "n")]
+  pub no_stash: bool,
 }
 
 #[derive(StructOpt, Debug)]

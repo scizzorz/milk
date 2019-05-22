@@ -31,6 +31,7 @@ pub fn main(args: cli::Root) -> Result<(), Error> {
       BranchCommand::New(subcmd_args) => branch_new(args.globals, subcmd_args),
       BranchCommand::Rename(subcmd_args) => branch_rename(args.globals, subcmd_args),
       BranchCommand::Rm(subcmd_args) => branch_rm(args.globals, subcmd_args),
+      BranchCommand::Switch(subcmd_args) => branch_switch(args.globals, subcmd_args),
     },
     Command::Clean(cmd_args) => clean(args.globals, cmd_args),
     Command::Commit(cmd_args) => commit(args.globals, cmd_args),
@@ -126,6 +127,57 @@ pub fn branch_new(globals: cli::Global, args: cli::BranchNew) -> Result<(), Erro
   } else {
     Err(failure::err_msg("object was not a commit"))?;
   }
+
+  Ok(())
+}
+
+pub fn branch_switch(globals: cli::Global, args: cli::BranchSwitch) -> Result<(), Error> {
+  let repo =
+    Repository::discover(globals.repo_path).with_context(|_| "couldn't open repository")?;
+
+  // find the destination branch's git-style ref name
+  let branch = repo
+    .find_branch(&args.name, BranchType::Local)
+    .with_context(|_| "couldn't locate target branch")?;
+  let ref_ = branch.into_reference();
+  let ref_name = ref_
+    .name()
+    .ok_or_else(|| failure::err_msg("ref name is invalid UTF-8"))?;
+
+  // we don't want to switch branches if the index doesn't match HEAD
+  let diff = repo
+    .make_diff(DiffTarget::Index, DiffTarget::Name("/HEAD"))
+    .with_context(|_| "failed to diff index to working tree")?;
+  let stats = diff
+    .stats()
+    .with_context(|_| "couldn't compute diff stats")?;
+  if stats.files_changed() > 0 {
+    eprintln!(
+      "{}: please unstage all changes before switching branches",
+      "error".red()
+    );
+    exit(exitcode::DATAERR);
+  }
+
+  if !args.no_stash {
+    // FIXME do something to save uncommitted changes here. it looks like the
+    // git2 stash_* functions kinda suck, so...  maybe don't use those?
+  }
+
+  // move HEAD
+  repo
+    .set_head(&ref_name)
+    .with_context(|_| "couldn't change HEAD")?;
+
+  // force checkout the working tree
+  let mut checkout = CheckoutBuilder::new();
+  checkout.force();
+  repo
+    .checkout_head(Some(&mut checkout))
+    .with_context(|_| "couldn't checkout HEAD")?;
+
+  // FIXME check if this branch had a Milk-generated stash, and if so, check
+  // those out instead of the HEAD tree
 
   Ok(())
 }
