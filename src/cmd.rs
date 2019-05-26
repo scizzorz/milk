@@ -162,6 +162,43 @@ pub fn branch_switch(globals: cli::Global, args: cli::BranchSwitch) -> Result<()
   if !args.no_stash {
     // FIXME do something to save uncommitted changes here. it looks like the
     // git2 stash_* functions kinda suck, so...  maybe don't use those?
+    let sig = repo
+      .signature()
+      .with_context(|_| "couldn't obtain signature")?;
+
+    // FIXME needs to stage all tracked files
+    let mut index = repo.index().with_context(|_| "couldn't open index")?;
+    let tree_id = index.write_tree().with_context(|_| "couldn't write tree")?;
+    let tree = repo
+      .find_tree(tree_id)
+      .with_context(|_| "couldn't find tree")?;
+
+    let head = repo.head().with_context(|_| "couldn't locate HEAD")?;
+    let commit = head
+      .peel_to_commit()
+      .with_context(|_| "couldn't peel to commit HEAD")?;
+
+    let parents = [&commit];
+    // because milk mustaches
+    let mut stache_name = String::from("refs/stache/");
+    // FIXME this should make the stash based on what HEAD's name is, not our
+    // destination's name
+    stache_name.push_str(&args.name);
+
+    // FIXME better commit message?
+    // FIXME what if that stache exists already?
+    let new_commit_id = repo
+      .commit(Some(&stache_name), &sig, &sig, "wip", &tree, &parents)
+      .with_context(|_| "couldn't write commit")?;
+
+    let new_commit = repo
+      .find_commit(new_commit_id)
+      .with_context(|_| "couldn't find commit")?;
+
+    // FIXME print something more interesting than the HEAD
+    let head_name = head.shorthand().unwrap_or("[???]");
+    println!("{}", repo.highlight_named_oid(head_name, commit.id()));
+    repo.print_commit(&new_commit);
   }
 
   // move HEAD
@@ -169,6 +206,7 @@ pub fn branch_switch(globals: cli::Global, args: cli::BranchSwitch) -> Result<()
     .set_head(&ref_name)
     .with_context(|_| "couldn't change HEAD")?;
 
+  // FIXME if args.no_stash is set, we probably don't want to do this...
   // force checkout the working tree
   let mut checkout = CheckoutBuilder::new();
   checkout.force();
